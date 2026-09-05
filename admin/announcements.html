@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>تصريحات الدوري - دوري دراية</title>
+<link rel="stylesheet" href="../assets/css/theme.css"/>
+<link rel="stylesheet" href="../assets/css/components.css"/>
+<style>
+  #adminTabs{ display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px; }
+  .composer{ padding:16px;margin-bottom:18px; }
+  .composer textarea{
+    width:100%;min-height:88px;resize:vertical;border:1px solid var(--border);border-radius:var(--radius-sm);
+    background:var(--surface2);color:var(--text);padding:10px 12px;font-family:inherit;font-size:14px;line-height:1.6;
+  }
+  .composer-row{ display:flex;gap:10px;margin-top:10px;align-items:center; }
+  .composer-row select{
+    flex:1;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface2);
+    color:var(--text);padding:9px 10px;font-family:inherit;font-size:13px;
+  }
+  .ann-card{ padding:14px;margin-bottom:10px;display:flex;justify-content:space-between;gap:10px;align-items:flex-start; }
+  .ann-body{ font-size:14px;line-height:1.7;font-weight:600; }
+  .ann-meta{ font-size:11px;color:var(--text2);margin-top:6px; }
+  .ann-tag{ display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:800;background:var(--gold-light);color:var(--gold);margin-inline-end:6px; }
+  .ann-del{ flex-shrink:0;background:none;border:none;color:var(--red);font-size:16px;cursor:pointer;padding:4px; }
+</style>
+</head>
+<body>
+<header id="appHeader"></header>
+<main class="container">
+  <div id="adminTabs"></div>
+
+  <div class="composer glass">
+    <textarea id="bodyInput" maxlength="220" placeholder="اكتب تصريحًا يحمّس الشباب..."></textarea>
+    <div class="composer-row">
+      <select id="teamSelect">
+        <option value="">باسم الإدارة (عام)</option>
+      </select>
+      <button class="btn primary" style="padding:10px 18px;font-size:13px;" onclick="onPublish()">نشر</button>
+    </div>
+  </div>
+
+  <div id="annList"></div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="../js/supabaseClient.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/ui/toast.js"></script>
+<script src="../js/ui/theme.js"></script>
+<script src="../js/ui/adminNav.js"></script>
+<script src="../js/api/teams.js"></script>
+<script src="../js/api/announcements.js"></script>
+<script>
+function timeAgo(dateStr){
+  const diffMin = Math.max(1, Math.round((Date.now() - new Date(dateStr).getTime()) / 60000));
+  if(diffMin < 60) return `قبل ${diffMin} د`;
+  const diffHr = Math.round(diffMin / 60);
+  if(diffHr < 24) return `قبل ${diffHr} س`;
+  return `قبل ${Math.round(diffHr / 24)} يوم`;
+}
+
+function renderList(items){
+  document.getElementById("annList").innerHTML = items.map(a => `
+    <div class="ann-card glass">
+      <div>
+        <span class="ann-tag">${a.team ? a.team.name : 'الإدارة'}</span>
+        <div class="ann-body">${a.body}</div>
+        <div class="ann-meta">${timeAgo(a.created_at)}</div>
+      </div>
+      <button class="ann-del" title="حذف" onclick="onDelete('${a.id}')">✕</button>
+    </div>
+  `).join("") || `<div class="empty-state">لا توجد تصريحات بعد. اكتب أول تصريح!</div>`;
+}
+
+async function reload(){
+  const items = await listAnnouncements(50);
+  renderList(items);
+}
+
+async function onPublish(){
+  const input = document.getElementById("bodyInput");
+  const body = input.value.trim();
+  if(!body){ showToast("اكتب نص التصريح أولًا", "error"); return; }
+  const teamId = document.getElementById("teamSelect").value || null;
+  try{
+    await createAnnouncement(body, teamId);
+    input.value = "";
+    showToast("تم نشر التصريح", "success");
+    await reload();
+  }catch(err){ showToast(err.message, "error"); }
+}
+
+async function onDelete(id){
+  try{ await deleteAnnouncement(id); showToast("تم الحذف", "success"); await reload(); }
+  catch(err){ showToast(err.message, "error"); }
+}
+
+(async function(){
+  const profile = await requireAuth({ adminOnly: true });
+  if(!profile) return;
+  renderAdminNav("announcements");
+
+  const teams = await listTeams();
+  const teamSelect = document.getElementById("teamSelect");
+  teams.forEach(t => {
+    const opt = document.createElement("option");
+    opt.value = t.id; opt.textContent = `باسم ${t.name}`;
+    teamSelect.appendChild(opt);
+  });
+
+  await reload();
+})();
+</script>
+</body>
+</html>

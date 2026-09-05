@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>غرفة الفريق - دوري دراية</title>
+<link rel="stylesheet" href="assets/css/theme.css"/>
+<link rel="stylesheet" href="assets/css/components.css"/>
+<style>
+  .team-hero{ padding:24px 16px;text-align:center; }
+  .team-hero .logo{ width:64px;height:64px;border-radius:16px;margin:0 auto 10px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:26px; }
+  .team-hero .balance{ font-size:34px;font-weight:800;color:var(--accent);margin-top:6px; }
+  [data-theme="dark"] .team-hero .balance{ color:var(--gold); }
+  .section-title{ font-size:13px;font-weight:800;color:var(--text2);margin:18px 0 8px; }
+  .roster-item{ display:flex;justify-content:space-between;align-items:center;padding:10px 14px;margin-bottom:6px;font-size:13px; }
+  .ledger-row{ display:flex;justify-content:space-between;align-items:center;padding:9px 14px;margin-bottom:6px;font-size:12px; }
+  .ledger-row .delta.pos{ color:var(--green);font-weight:800; }
+  .ledger-row .delta.neg{ color:var(--red);font-weight:800; }
+</style>
+</head>
+<body>
+<header id="appHeader"></header>
+<main class="container">
+  <div id="teamHero" class="card glass team-hero"></div>
+
+  <div id="upcomingMatchWrap"></div>
+
+  <div class="section-title">القائمة الأصلية</div>
+  <div id="rosterList"></div>
+
+  <div class="section-title">آخر الحركات المالية</div>
+  <div id="ledgerList"></div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="js/supabaseClient.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/ui/toast.js"></script>
+<script src="js/ui/theme.js"></script>
+<script src="js/ui/header.js"></script>
+<script src="js/api/teams.js"></script>
+<script src="js/api/players.js"></script>
+<script src="js/api/ledger.js"></script>
+<script>
+const teamId = new URLSearchParams(window.location.search).get("id");
+const REASON_LABELS = {
+  match_result: "نتيجة مباراة", loan_fee: "رسم إعارة",
+  admin_adjustment: "تعديل إداري", admin_reversal: "عكس/تصحيح", season_init: "بداية الموسم",
+};
+
+async function renderTeamRoom(){
+  const { data: team, error } = await sb.from("teams").select("*").eq("id", teamId).single();
+  if(error || !team){ document.querySelector("main").innerHTML = `<div class="empty-state">الفريق غير موجود</div>`; return; }
+
+  document.getElementById("teamHero").innerHTML = `
+    <div class="logo" style="background:${team.primary_color}">${team.logo_url
+      ? `<img src="${team.logo_url}" style="width:100%;height:100%;object-fit:cover;border-radius:16px;"
+          onerror="this.style.display='none';this.nextElementSibling.style.display='inline';"/><span style="display:none;">${team.name.slice(0,1)}</span>`
+      : team.name.slice(0,1)}</div>
+    <div style="font-weight:800;font-size:18px;">${team.name}</div>
+    <div class="balance">${team.balance_daraya} <span style="font-size:14px;color:var(--text2);">دراية</span></div>
+  `;
+
+  const players = await listPlayers();
+  const roster = players.filter(p => p.original_team_id === teamId);
+  document.getElementById("rosterList").innerHTML = roster.map(p => `
+    <div class="roster-item glass"><span>${p.full_name}</span><span style="color:var(--text2);font-size:11px;">${p.position || ''}</span></div>
+  `).join("") || `<div class="empty-state">لا يوجد لاعبون بعد</div>`;
+
+  const { data: upcoming } = await sb
+    .from("matches")
+    .select("id, status, team_a:team_a_id(name), team_b:team_b_id(name), week:week_id(week_number)")
+    .or(`team_a_id.eq.${teamId},team_b_id.eq.${teamId}`)
+    .neq("status", "completed")
+    .neq("status", "cancelled")
+    .order("created_at", { ascending: true })
+    .limit(1);
+
+  const wrap = document.getElementById("upcomingMatchWrap");
+  if(upcoming && upcoming.length){
+    const m = upcoming[0];
+    wrap.innerHTML = `
+      <a href="match.html?id=${m.id}" class="card glass" style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;margin-bottom:14px;text-decoration:none;color:inherit;">
+        <div>
+          <div style="font-size:12px;color:var(--text2);">مباراتك القادمة · أسبوع ${m.week.week_number}</div>
+          <div style="font-weight:800;font-size:14px;">${m.team_a.name} × ${m.team_b.name}</div>
+        </div>
+        <span class="btn primary" style="font-size:12px;">سجّل صفقة إعارة ←</span>
+      </a>
+    `;
+  }else{
+    wrap.innerHTML = "";
+  }
+
+  const ledger = await listLedger(teamId);
+  document.getElementById("ledgerList").innerHTML = ledger.slice(0, 30).map(r => `
+    <div class="ledger-row glass">
+      <span>${REASON_LABELS[r.reason] || r.reason}${r.note ? ' · ' + r.note : ''}</span>
+      <span class="delta ${r.delta >= 0 ? 'pos' : 'neg'}">${r.delta >= 0 ? '+' : ''}${r.delta}</span>
+    </div>
+  `).join("") || `<div class="empty-state">لا توجد حركات بعد</div>`;
+}
+
+(async function(){
+  const profile = await optionalAuth();
+  if(!teamId){ document.querySelector("main").innerHTML = `<div class="empty-state">لم يتم تحديد فريق</div>`; return; }
+  renderHeader(profile, "team-room");
+  await renderTeamRoom();
+
+  sb.channel(`team-room-${teamId}`)
+    .on("postgres_changes", { event: "*", schema: "public", table: "teams", filter: `id=eq.${teamId}` }, renderTeamRoom)
+    .on("postgres_changes", { event: "*", schema: "public", table: "balance_ledger", filter: `team_id=eq.${teamId}` }, renderTeamRoom)
+    .subscribe();
+})();
+</script>
+</body>
+</html>

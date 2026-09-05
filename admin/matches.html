@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>إدارة المباريات - دوري دراية</title>
+<link rel="stylesheet" href="../assets/css/theme.css"/>
+<link rel="stylesheet" href="../assets/css/components.css"/>
+<style>
+  #adminTabs{ display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px; }
+  .week-group-title{ font-size:13px;font-weight:800;color:var(--text2);margin:18px 0 8px; }
+  .match-card{ padding:14px;margin-bottom:10px; }
+  .status-pill{ font-size:11px;padding:3px 10px;border-radius:999px;font-weight:700; }
+  .status-scheduled{ background:var(--blue-bg);color:var(--blue); }
+  .status-completed{ background:var(--green-bg);color:var(--green); }
+  .row-3{ display:grid;grid-template-columns:1fr 1fr 90px;gap:8px;margin-bottom:8px; }
+  .match-summary{ display:flex;align-items:center;justify-content:space-between;font-size:13px;font-weight:700;margin-bottom:8px; }
+  .actions-row{ display:flex;gap:8px;flex-wrap:wrap; }
+</style>
+</head>
+<body>
+<header id="appHeader"></header>
+<main class="container">
+  <div id="adminTabs"></div>
+
+  <div class="card glass">
+    <h3 style="font-size:14px;margin-bottom:10px;">إنشاء مباراة جديدة</h3>
+    <form id="newMatchForm">
+      <div style="margin-bottom:10px;"><label class="field-label">الأسبوع</label><select class="field" id="nm_week" required></select></div>
+      <div class="row-3">
+        <select class="field" id="nm_a" required></select>
+        <select class="field" id="nm_b" required></select>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+        <input class="field" type="number" id="nm_sa" placeholder="مداخلة الفريق الأول" required min="1"/>
+        <input class="field" type="number" id="nm_sb" placeholder="مداخلة الفريق الثاني" required min="1"/>
+      </div>
+      <button class="btn primary block" type="submit">إنشاء المباراة</button>
+    </form>
+  </div>
+
+  <div id="weeksList"></div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="../js/supabaseClient.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/ui/toast.js"></script>
+<script src="../js/ui/theme.js"></script>
+<script src="../js/ui/adminNav.js"></script>
+<script src="../js/api/teams.js"></script>
+<script src="../js/api/matches.js"></script>
+<script>
+let teamsCache = [], weeksCache = [], matchesCache = [];
+
+// كل قائمة تستبعد الفريق المختار حاليًا في القائمة الثانية، حتى ما يصير فريق ضد نفسه
+function teamOptions(selectedId, excludeId){
+  return teamsCache
+    .filter(t => t.id !== excludeId)
+    .map(t => `<option value="${t.id}" ${t.id===selectedId?'selected':''}>${t.name}</option>`).join("");
+}
+
+function wireMutualExclusion(aId, bId){
+  const aSel = document.getElementById(aId);
+  const bSel = document.getElementById(bId);
+  if(!aSel || !bSel) return;
+  aSel.addEventListener("change", () => {
+    const keepB = bSel.value;
+    bSel.innerHTML = teamOptions(keepB, aSel.value);
+  });
+  bSel.addEventListener("change", () => {
+    const keepA = aSel.value;
+    aSel.innerHTML = teamOptions(keepA, bSel.value);
+  });
+}
+
+function matchCard(m){
+  if(m.status === "completed"){
+    return `
+      <div class="match-card glass">
+        <div class="match-summary"><span>${m.team_a.name} (دخل بـ${m.team_a_stake})</span><span style="color:var(--text2);">${m.team_a_balance_before}→${m.team_a_balance_after}</span></div>
+        <div class="match-summary"><span>${m.team_b.name} (دخل بـ${m.team_b_stake})</span><span style="color:var(--text2);">${m.team_b_balance_before}→${m.team_b_balance_after}</span></div>
+        <div style="font-size:12px;color:var(--gold);font-weight:800;margin-bottom:8px;">الفائز: ${m.winner.name}</div>
+        <button class="btn" id="undo-${m.id}" style="font-size:12px;">تصحيح / إلغاء الاعتماد</button>
+      </div>
+    `;
+  }
+  return `
+    <div class="match-card glass">
+      <div class="match-summary"><span>${m.team_a.name}</span><span>مقابل</span><span>${m.team_b.name}</span></div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:10px;">${m.team_a.name} يدخل بـ${m.team_a_stake} · ${m.team_b.name} يدخل بـ${m.team_b_stake}</div>
+      <div class="actions-row">
+        <button class="btn primary" id="confirm-${m.id}" style="font-size:12px;">اعتماد نتيجة: فوز ${m.team_a.name}</button>
+        <button class="btn" style="font-size:12px;" onclick="pickWinner('${m.id}','${m.team_b_id}')">اعتماد نتيجة: فوز ${m.team_b.name}</button>
+        <button class="btn" style="font-size:12px;" onclick="toggleMatchEdit('${m.id}')">تعديل المباراة</button>
+      </div>
+      <form id="editform-${m.id}" class="team-edit-form" style="display:none;margin-top:12px;">
+        <div class="row-3">
+          <select class="field" id="ea-${m.id}" required>${teamOptions(m.team_a_id, m.team_b_id)}</select>
+          <select class="field" id="eb-${m.id}" required>${teamOptions(m.team_b_id, m.team_a_id)}</select>
+        </div>
+        <div class="row-2" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+          <input class="field" type="number" id="esa-${m.id}" value="${m.team_a_stake}" placeholder="مداخلة الفريق الأول" required min="1"/>
+          <input class="field" type="number" id="esb-${m.id}" value="${m.team_b_stake}" placeholder="مداخلة الفريق الثاني" required min="1"/>
+        </div>
+        <button class="btn primary block" type="submit" style="font-size:13px;">حفظ التعديل</button>
+      </form>
+    </div>
+  `;
+}
+
+function renderWeeks(){
+  const container = document.getElementById("weeksList");
+  const byWeek = {};
+  matchesCache.forEach(m => (byWeek[m.week_id] = byWeek[m.week_id] || []).push(m));
+
+  container.innerHTML = weeksCache.map(w => {
+    const matches = (byWeek[w.id] || []).sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+    if(!matches.length) return "";
+    return `
+      <div class="week-group-title">الأسبوع ${w.week_number} (${matches.length} ${matches.length === 1 ? 'مباراة' : 'مباريات'})</div>
+      ${matches.map(matchCard).join("")}
+    `;
+  }).join("") || `<div class="empty-state">لا توجد مباريات بعد — أنشئ أول مباراة من الأعلى</div>`;
+
+  matchesCache.forEach(m => {
+    if(m.status === "completed"){
+      document.getElementById(`undo-${m.id}`)?.addEventListener("click", () => onUndo(m));
+      return;
+    }
+    wireMutualExclusion(`ea-${m.id}`, `eb-${m.id}`);
+    document.getElementById(`confirm-${m.id}`)?.addEventListener("click", () => pickWinner(m.id, m.team_a_id));
+    document.getElementById(`editform-${m.id}`)?.addEventListener("submit", (e) => onEditMatch(e, m));
+  });
+}
+
+function toggleMatchEdit(matchId){
+  const el = document.getElementById(`editform-${matchId}`);
+  el.style.display = el.style.display === "none" ? "block" : "none";
+}
+
+async function pickWinner(matchId, winnerTeamId){
+  try{
+    await confirmMatchResult(matchId, winnerTeamId);
+    showToast("تم اعتماد النتيجة", "success");
+    await reload();
+  }catch(err){ showToast(err.message, "error"); }
+}
+
+async function onEditMatch(e, m){
+  e.preventDefault();
+  try{
+    await editMatch(m.id, {
+      team_a_id: document.getElementById(`ea-${m.id}`).value,
+      team_b_id: document.getElementById(`eb-${m.id}`).value,
+      team_a_stake: parseInt(document.getElementById(`esa-${m.id}`).value, 10),
+      team_b_stake: parseInt(document.getElementById(`esb-${m.id}`).value, 10),
+    });
+    showToast("تم حفظ تعديل المباراة", "success");
+    await reload();
+  }catch(err){ showToast(err.message, "error"); }
+}
+
+async function onUndo(m){
+  if(!confirm("هل تريد إلغاء اعتماد نتيجة هذه المباراة؟ سيتم عكس التأثير المالي بالكامل.")) return;
+  try{
+    await undoMatchResult(m.id);
+    showToast("تم التراجع عن الاعتماد", "success");
+    await reload();
+  }catch(err){ showToast(err.message, "error"); }
+}
+
+async function reload(){
+  matchesCache = await listMatches();
+  renderWeeks();
+}
+
+(async function(){
+  const profile = await requireAuth({ adminOnly: true });
+  if(!profile) return;
+  renderAdminNav("matches");
+
+  teamsCache = await listTeams();
+  weeksCache = await listWeeks();
+
+  document.getElementById("nm_week").innerHTML = weeksCache.map(w => `<option value="${w.id}">الأسبوع ${w.week_number}</option>`).join("");
+  document.getElementById("nm_a").innerHTML = teamOptions(teamsCache[0]?.id);
+  document.getElementById("nm_b").innerHTML = teamOptions(teamsCache[1]?.id, teamsCache[0]?.id);
+  wireMutualExclusion("nm_a", "nm_b");
+
+  document.getElementById("newMatchForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    try{
+      await createMatch({
+        week_id: document.getElementById("nm_week").value,
+        team_a_id: document.getElementById("nm_a").value,
+        team_b_id: document.getElementById("nm_b").value,
+        team_a_stake: parseInt(document.getElementById("nm_sa").value, 10),
+        team_b_stake: parseInt(document.getElementById("nm_sb").value, 10),
+      });
+      showToast("تم إنشاء المباراة", "success");
+      e.target.reset();
+      document.getElementById("nm_a").innerHTML = teamOptions(teamsCache[0]?.id);
+      document.getElementById("nm_b").innerHTML = teamOptions(teamsCache[1]?.id, teamsCache[0]?.id);
+      await reload();
+    }catch(err){ showToast(err.message, "error"); }
+  });
+
+  await reload();
+})();
+</script>
+</body>
+</html>

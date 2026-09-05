@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>سجل التدقيق - دوري دراية</title>
+<link rel="stylesheet" href="../assets/css/theme.css"/>
+<link rel="stylesheet" href="../assets/css/components.css"/>
+<style>
+  #adminTabs{ display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px; }
+  .audit-row{ padding:12px 14px;margin-bottom:6px;font-size:12px; }
+  .audit-row .action{ font-weight:800;color:var(--accent); }
+  [data-theme="dark"] .audit-row .action{ color:var(--gold); }
+  .audit-row .meta{ color:var(--text2);margin-top:4px; }
+  details summary{ cursor:pointer;color:var(--text2);margin-top:6px; }
+  pre{ white-space:pre-wrap;word-break:break-all;font-size:11px;background:var(--surface2);padding:8px;border-radius:8px;margin-top:6px; }
+</style>
+</head>
+<body>
+<header id="appHeader"></header>
+<main class="container">
+  <div id="adminTabs"></div>
+  <div id="auditList"></div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="../js/supabaseClient.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/ui/toast.js"></script>
+<script src="../js/ui/theme.js"></script>
+<script src="../js/ui/adminNav.js"></script>
+<script src="../js/api/ledger.js"></script>
+<script>
+(async function(){
+  const profile = await requireAuth({ adminOnly: true });
+  if(!profile) return;
+  renderAdminNav("audit");
+
+  const rows = await listAuditLog();
+  document.getElementById("auditList").innerHTML = rows.map(r => `
+    <div class="audit-row glass">
+      <span class="action">${r.action}</span> — ${r.entity_table} <code>${r.entity_id.slice(0,8)}</code>
+      <div class="meta">${r.profiles ? r.profiles.display_name : 'النظام'} · ${new Date(r.created_at).toLocaleString('ar-SA')}</div>
+      <details><summary>تفاصيل قبل/بعد</summary><pre>${JSON.stringify({ before: r.before_data, after: r.after_data }, null, 2)}</pre></details>
+    </div>
+  `).join("") || `<div class="empty-state">لا توجد أحداث بعد</div>`;
+})();
+</script>
+</body>
+</html>

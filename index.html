@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+<title>دوري دراية</title>
+<link rel="stylesheet" href="assets/css/theme.css"/>
+<link rel="stylesheet" href="assets/css/components.css"/>
+<style>
+  /* ====== شاشة الدخول (كشف شعار مجموعة درايه تسلسليًا) ====== */
+  #splash{
+    position:fixed;inset:0;z-index:9999;
+    display:flex;align-items:center;justify-content:center;
+    background:
+      radial-gradient(60% 50% at 50% 42%, color-mix(in srgb, var(--gold) 14%, transparent), transparent 70%),
+      radial-gradient(70% 60% at 50% 105%, color-mix(in srgb, var(--accent) 18%, transparent), transparent 70%),
+      var(--bg);
+    opacity:1;transition:opacity .9s cubic-bezier(.33,0,.2,1), visibility .9s cubic-bezier(.33,0,.2,1);
+    cursor:pointer;
+  }
+  #splash.hide{opacity:0;visibility:hidden;pointer-events:none;}
+  .sp-logo-svg{ width:150px;height:auto;filter:drop-shadow(0 0 26px color-mix(in srgb, var(--gold) 42%, transparent)); }
+  .sp-logo-svg svg{ width:100%;height:auto;display:block;overflow:visible; }
+  .daraya-logo .st0{ fill:var(--gold); }
+  .daraya-logo .st1{ fill:var(--text); }
+  .daraya-logo .rv{ opacity:0;transform:translateY(7px) scale(.975);transform-origin:center;transform-box:fill-box; }
+  #splash .daraya-logo .rv{ animation:rvReveal 1.25s cubic-bezier(.16,1,.3,1) forwards;animation-delay:calc(var(--o,1) * .13s); }
+  @keyframes rvReveal{ to{ opacity:1;transform:translateY(0) scale(1); } }
+  #splash .daraya-logo .gold-finale{
+    animation:rvReveal 1.6s cubic-bezier(.16,1,.3,1) forwards, goldGlow 2.6s cubic-bezier(.33,0,.2,1);
+    animation-delay:calc(var(--o,1) * .13s);
+  }
+  @keyframes goldGlow{
+    0%{ filter:drop-shadow(0 0 0 transparent); }
+    45%{ filter:drop-shadow(0 0 9px color-mix(in srgb, var(--gold) 60%, transparent)); }
+    100%{ filter:drop-shadow(0 0 0 transparent); }
+  }
+  .sp-tagline{ margin-top:18px;text-align:center; }
+  .sp-line{
+    width:0;height:1.5px;margin:0 auto 10px;
+    background:linear-gradient(90deg,transparent,var(--gold),transparent);
+    animation:spLineGrow 1.4s cubic-bezier(.16,1,.3,1) 1.6s forwards;
+  }
+  @keyframes spLineGrow{ to{ width:120px; } }
+  .sp-sub{
+    font-size:15px;font-weight:800;color:var(--text);letter-spacing:.5px;
+    opacity:0;animation:spSubIn 1.2s ease 1.9s forwards;
+  }
+  @keyframes spSubIn{ to{ opacity:1; } }
+  @media (prefers-reduced-motion:reduce){
+    .daraya-logo .rv, #splash .daraya-logo .gold-finale{ animation:none!important;opacity:1!important;transform:none!important; }
+    .sp-line{ animation:none!important;width:120px!important; }
+    .sp-sub{ animation:none!important;opacity:1!important; }
+  }
+
+  /* ====== الصفحة الرئيسية ====== */
+  .landing-wrap{ min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px; }
+  .landing-emoji{ font-size:56px;margin-bottom:10px; }
+  .landing-wrap h1{ font-size:26px;font-weight:800;margin-bottom:4px; }
+  .landing-wrap p{ font-size:14px;color:var(--text2);margin-bottom:32px; }
+  .entry-grid{ width:100%;max-width:380px;display:flex;flex-direction:column;gap:14px; }
+  .entry-btn{
+    display:flex;align-items:center;gap:14px;padding:18px 20px;border-radius:var(--radius-lg);
+    text-decoration:none;color:var(--text);
+  }
+  .entry-btn .icon{ font-size:28px;flex-shrink:0; }
+  .entry-btn .label{ font-weight:800;font-size:15px; }
+  .entry-btn .sub{ font-size:11px;color:var(--text2);margin-top:2px; }
+  .entry-btn.primary-entry{
+    background:linear-gradient(135deg, var(--accent), var(--accent2));color:#fff;border:1px solid var(--gold);
+    box-shadow:0 12px 28px -10px rgba(26,58,92,.5);
+  }
+  .entry-btn.primary-entry .sub{ color:rgba(255,255,255,.75); }
+  .entry-btn:active{ transform:scale(.97); }
+
+  @keyframes fadeSlideUp{
+    from{ opacity:0; transform:translateY(18px); }
+    to{ opacity:1; transform:translateY(0); }
+  }
+  .landing-wrap h1, .landing-wrap p, .entry-grid .entry-btn{ opacity:0; }
+  #landingWrap.reveal h1{ animation: fadeSlideUp .6s ease 0s both; }
+  #landingWrap.reveal p{ animation: fadeSlideUp .6s ease .1s both; }
+  #landingWrap.reveal .entry-grid .entry-btn{ animation: fadeSlideUp .55s ease both; }
+  #landingWrap.reveal .entry-grid .entry-btn:nth-child(1){ animation-delay:.2s; }
+  #landingWrap.reveal .entry-grid .entry-btn:nth-child(2){ animation-delay:.3s; }
+  #landingWrap.reveal .entry-grid .entry-btn:nth-child(3){ animation-delay:.4s; }
+  @media (prefers-reduced-motion:reduce){
+    .landing-wrap h1, .landing-wrap p, .entry-grid .entry-btn{ animation:none !important; opacity:1 !important; }
+  }
+</style>
+</head>
+<body>
+
+<div id="splash">
+  <div>
+    <div class="sp-logo-svg">
+      <svg class="daraya-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 376.63 398.77" role="img" aria-label="شعار مجموعة دراية">
+        <path class="st1 rv" style="--o:4" d="M277.12,268.55c28.75.23,49.21-32.02,69.52-43.92,8.47-4.96,16.31-3.56,17.58,2.73.75,3.69.18,8.62-2.16,16.67-9.12,31.42-33.22,70.54-69.63,97.44-55.47,40.98-88.35,40.98-89.86,45.11-.23.65.75,1.38,2.99,1.38,17.11,0,63.34-3.38,102.95-26.65,12.47-7.32,16.91-2.7,19.69-5.35,23.97-22.8,37.61-64.9,41.5-78.25,9.12-31.19,6.75-53.29,6.39-61.37-2.29-48.93-28.96-57.16-72.2-6.16-16.31,18.21-23.5,12.93-26.7,15.32-.55.42-.42,42.98-.08,43.03h0v.02Z"/>
+        <path class="st1 rv" style="--o:2" d="M324.04,129.19c-55.63-25.37-86.07,154.45-110.56,188.55-47.5,87.91-165.41,83.11-179.74-23.35-.6-8.31-3.45-8.28-3.53,0-.83,90.25,77.32,104.38,100.2,104.38,26.98,0,38.59-5.97,45.03-4.7,6,1.17,8.83,4.36,8.83,4.36,15.66-10.93,29.14-32,39.4-56.64,18.05-33.16,48.77-193.48,100.38-168.76.83.62,1.92-7.61,1.77-6.41.52-12.1,2.52-26.07-1.77-37.4h0v-.03h-.01Z"/>
+        <g class="rv" style="--o:5">
+          <path class="st1" d="M132.72,35.83c-.13,3.82,0,.34.05-.36-.1,2.1-.26,4.18-.42,6.28C121.81,147.87,26.63,139.68,2.94,214.71c-2.62,13.87-7.84,53.06,8.26,59.03,16.88,5.84,54.49-3.69,66.1-17.3,11.76-16.88,12.47-39.76,11.38-59.66-.16-2.1-5.53-16.52-5.12-8.15,1.19,24.13-13.45,33.16-38.72,39.63-12.18,3.12-32.26,8.67-40.33-4.31-2.55-7.48-2.26-.7.86,20.34l-1.14,13.09c28.67-85.57,129.46-71.6,133.28-209.9.23-8.83.93-18.36-1.74-26.96-2.88-2.99-2.91,13.58-3.06,15.3h.03-.02Z"/>
+          <path class="st1" d="M135.11,19.72C66.57,31.88,8.97,95.04,15.59,166.38c.16,2.1,2.75,16.23,3.4,7.87,4.7-58.77,59.68-108.09,115.52-118.53,4.44-1.77,3.4-33.87.57-36,0,0,.03,0,.03,0Z"/>
+        </g>
+        <path class="st1 rv" style="--o:6" d="M236.44,69.2c8.88,2.99,16.28,8.08,21.84,14.41,8.15,9.3,11.76,22,11.61,33.89-.1,8.23-1.09,11.53-.39,12.41s2.39-2.47,5.32-11.74c9.66-30.62-1.12-61.65-33.4-73.47-.44.05-5.71,24.2-4.99,24.52v-.03h.01Z"/>
+        <g class="rv" style="--o:3">
+          <path class="st1" d="M197.93,151.19c-1.82-26.67-7.61-52.72-14.18-78.56-5.66-22.28-12.54-44.51-16.08-67.26-1.35-8.67-3.35,6.78-3.4,7.87-.68,9.92-.62,20.13.88,29.97,6.73,43.53,25.53,87.44,28.46,130.09.1,1.61,1.12,16.05,3.4,7.87,2.52-8.99,1.53-20.8.88-29.97h.04Z"/>
+          <path class="st1" d="M165.73,43.9c29.68,25.11,53.94,64.98,60.54,100.95,4.23,23.09-.21,43.68-1.58,49.63-9.92,43.4-34.59,74.33-81.81,105.78-14.08,9.38-24.57,15.35-24.57,15.71s4.52-.18,5.69-.34c62.2-9.09,99.81-35.16,110.17-92.64,8.21-45.53,4.93-94.01-15.66-148.14C207.49,45.96,188.61,20.76,165.75.04c-.75-.68-1.92,7.71-1.77,6.41-.55,12.13-2.49,26,1.77,37.4h0l-.03.05h0Z"/>
+        </g>
+        <path class="st1 rv" style="--o:7" d="M261.97,309.95c2.18-5.01,8.99-7.14,13.4-3.56,4.99,4.05,1.9,13.53-.78,18.26-3.48,6.13-9.51,11.43-11.56,13.66-.62.68-.42.13,0,0,15.74-5.45,25.97-22.39,23.04-39.11-.93-5.32-5.87-10.21-11.87-9.71-5.38.47-9.17,4.96-11.19,9.77-1.19,2.83-1.79,6.31-2.13,10.39-.16,1.97-.03,2.96,1.09.31h0Z"/>
+        <path class="st1 rv" style="--o:1" d="M153.39,176.17c.96-11.01,1.06-22.15,2.05-33.06,1.12-10.18,1.22-20.8,0-30.98-.13-.99-.42-6.41-1.77-6.41s-1.74,6.28-1.77,6.41c-1.53,12.91-2.99,26.02-2.65,38.9.18,6.73,0,26.15.78,34.28.1,1.17,3.17-7.19,3.35-9.14h0Z"/>
+        <g class="rv gold-finale" style="--o:8">
+          <path class="st0" d="M68.54,296.03c12.02,6.21,23.79,13.56,32.83,23.74,1.17-.52,25.53-30.72,25.11-31.22-9.04-10.21-20.83-17.56-32.83-23.74-.88-.29-25.27,30.23-25.11,31.22Z"/>
+          <path class="st0" d="M75.48,345.43c12.02,6.21,23.79,13.56,32.83,23.74,1.17-.52,25.53-30.72,25.11-31.22-9.04-10.21-20.83-17.56-32.83-23.74-.88-.29-25.27,30.23-25.11,31.22h0Z"/>
+          <path class="st1" d="M153.7,149.53c8.99,8.02,17.24,15.63,21.45,27.35,2.1,5.87.49,13.35-.18,15.56-6.41,21.06-24.15,28.7-40.59,29.17-21.14.6-41.66-14.75-44.83-44.62-.21-1.51-.36-3.01-.55-4.52.13,1.01.23,3.12.08.88-.36-5.56-.18,3.09-.1-1.58.05-2.44,0,2.86,0,2.6.08-1.09,0-2.23,0-3.32-.03-2.42-.08,2.52-.03,2.42.13-10.18,1.22-21.19-1.58-31.17-1.3-1.74-3.32,4.36-3.58,5.53-2.7,23.84-.47,45.24,3.58,68.93,5.32,44.51,48.67,67.5,81.34,31.14,15.95-18.21,18-42.28,17.32-65.42.57-28.62-11.61-57.01-32.36-76.77-.68-.7-1.92,7.74-1.77,6.41-.55,12.15-2.47,25.92,1.77,37.4h0l.03.03v-.02Z"/>
+        </g>
+      </svg>
+    </div>
+    <div class="sp-tagline">
+      <div class="sp-line"></div>
+      <div class="sp-sub">دوري دراية</div>
+    </div>
+  </div>
+</div>
+
+<div class="landing-wrap" id="landingWrap">
+  <div class="landing-emoji">🏆</div>
+  <h1>دوري دراية</h1>
+  <p>اختر طريقة الدخول</p>
+
+  <div class="entry-grid">
+    <a href="standings.html" class="entry-btn primary-entry glass">
+      <span class="icon">🏐</span>
+      <div><div class="label">متابعة الدوري</div><div class="sub">الترتيب والمباريات — بدون تسجيل دخول</div></div>
+    </a>
+    <a href="login.html?as=captain" class="entry-btn glass">
+      <span class="icon">🎽</span>
+      <div><div class="label">دخول الكباتن</div><div class="sub">لإدارة فريقك وصفقاته</div></div>
+    </a>
+    <a href="login.html?as=admin" class="entry-btn glass">
+      <span class="icon">👑</span>
+      <div><div class="label">دخول الإدارة</div><div class="sub">لوحة التحكم الكاملة بالدوري</div></div>
+    </a>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="js/supabaseClient.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/ui/theme.js"></script>
+<script>
+(async function(){
+  const session = await getSession();
+  if(session){ window.location.replace("standings.html"); return; }
+
+  const splash = document.getElementById("splash");
+  const landingWrap = document.getElementById("landingWrap");
+  let dismissed = false;
+
+  function dismissSplash(){
+    if(dismissed) return;
+    dismissed = true;
+    splash.classList.add("hide");
+    landingWrap.classList.add("reveal");
+  }
+
+  splash.addEventListener("click", dismissSplash);
+  setTimeout(dismissSplash, 3200);
+})();
+</script>
+</body>
+</html>

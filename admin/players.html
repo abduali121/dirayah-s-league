@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>إدارة اللاعبين - دوري دراية</title>
+<link rel="stylesheet" href="../assets/css/theme.css"/>
+<link rel="stylesheet" href="../assets/css/components.css"/>
+<style>
+  #adminTabs{ display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px; }
+  .player-card{ padding:11px 14px;margin-bottom:6px; }
+  .player-row{ display:flex;align-items:center;gap:10px; }
+  .player-row .name{ font-weight:700;flex:1; }
+  .player-row .team-tag{ font-size:11px;padding:3px 8px;border-radius:999px;color:#fff; }
+  .player-row.inactive .name{ text-decoration:line-through;color:var(--text2); }
+  .group-title{ font-size:13px;font-weight:800;color:var(--text2);margin:16px 0 8px; }
+  .player-edit-form{ margin-top:10px;display:none; }
+  .player-edit-form.open{ display:block; }
+</style>
+</head>
+<body>
+<header id="appHeader"></header>
+<main class="container">
+  <div id="adminTabs"></div>
+
+  <div class="card glass">
+    <h3 style="font-size:14px;margin-bottom:10px;">إضافة لاعب جديد</h3>
+    <form id="playerForm">
+      <div style="margin-bottom:10px;"><label class="field-label">اسم اللاعب</label><input class="field" id="p_name" required/></div>
+      <div style="margin-bottom:10px;"><label class="field-label">الفريق الأصلي (المالك)</label><select class="field" id="p_team" required></select></div>
+      <div style="margin-bottom:10px;"><label class="field-label">المركز (اختياري)</label>
+        <select class="field" id="p_position">
+          <option value="">— بدون —</option>
+          <option value="معد">معد (Setter)</option>
+          <option value="مهاجم">مهاجم (Hitter)</option>
+          <option value="حائط">حائط (Blocker)</option>
+          <option value="ليبرو">ليبرو (Libero)</option>
+          <option value="معاكس">معاكس (Opposite)</option>
+        </select>
+      </div>
+      <button class="btn primary block" type="submit">إضافة اللاعب</button>
+    </form>
+  </div>
+
+  <div id="playersList"></div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="../js/supabaseClient.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/ui/toast.js"></script>
+<script src="../js/ui/theme.js"></script>
+<script src="../js/ui/adminNav.js"></script>
+<script src="../js/api/teams.js"></script>
+<script src="../js/api/players.js"></script>
+<script>
+let teamsCache = [], playersCache = [];
+const POSITIONS = ["معد", "مهاجم", "حائط", "ليبرو", "معاكس"];
+
+function positionOptions(selected){
+  return `<option value="">— بدون —</option>` + POSITIONS.map(p =>
+    `<option value="${p}" ${p===selected?'selected':''}>${p}</option>`
+  ).join("");
+}
+
+function renderPlayers(){
+  const byTeam = {};
+  playersCache.forEach(p => {
+    const key = p.original_team_id;
+    (byTeam[key] = byTeam[key] || []).push(p);
+  });
+  const html = teamsCache.map(t => {
+    const rows = (byTeam[t.id] || []).map(p => `
+      <div class="player-card glass">
+        <div class="player-row ${p.is_active ? '' : 'inactive'}">
+          <span class="team-tag" style="background:${t.primary_color}">${t.name}</span>
+          <span class="name">${p.full_name}</span>
+          <span style="font-size:12px;color:var(--text2);">${p.position || ''}${!p.is_active ? ' · معطّل' : ''}</span>
+          <button class="btn" style="font-size:12px;padding:6px 10px;" onclick="toggleEdit('${p.id}')">تعديل</button>
+        </div>
+        <div class="player-edit-form" id="edit-${p.id}">
+          <div style="margin-bottom:10px;"><label class="field-label">اسم اللاعب</label><input class="field" id="e_name-${p.id}" value="${p.full_name}" required/></div>
+          <div style="margin-bottom:10px;"><label class="field-label">المركز</label><select class="field" id="e_position-${p.id}">${positionOptions(p.position)}</select></div>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;margin-bottom:10px;">
+            <input type="checkbox" id="e_active-${p.id}" ${p.is_active ? 'checked' : ''}/> نشط (مؤهّل للتشكيلة والإعارة)
+          </label>
+          <div style="display:flex;gap:8px;">
+            <button class="btn primary" style="flex:1;" onclick="onSavePlayer('${p.id}')">حفظ</button>
+            <button class="btn" onclick="toggleEdit('${p.id}')">إلغاء</button>
+          </div>
+        </div>
+      </div>
+    `).join("");
+    return `<div class="group-title">${t.name} (${(byTeam[t.id]||[]).length})</div>${rows || '<div class="empty-state">لا يوجد لاعبون بعد</div>'}`;
+  }).join("");
+  document.getElementById("playersList").innerHTML = html;
+}
+
+function toggleEdit(playerId){
+  document.getElementById(`edit-${playerId}`).classList.toggle("open");
+}
+
+async function onSavePlayer(playerId){
+  try{
+    await updatePlayer(playerId, {
+      full_name: document.getElementById(`e_name-${playerId}`).value.trim(),
+      position: document.getElementById(`e_position-${playerId}`).value,
+      photo_url: null,
+      is_active: document.getElementById(`e_active-${playerId}`).checked,
+    });
+    showToast("تم حفظ التعديلات", "success");
+    playersCache = await listPlayers();
+    renderPlayers();
+  }catch(err){ showToast(err.message, "error"); }
+}
+
+(async function(){
+  const profile = await requireAuth({ adminOnly: true });
+  if(!profile) return;
+  renderAdminNav("players");
+
+  teamsCache = await listTeams();
+  const select = document.getElementById("p_team");
+  select.innerHTML = teamsCache.map(t => `<option value="${t.id}">${t.name}</option>`).join("");
+  if(!teamsCache.length){
+    showToast("أضف الفرق أولًا من صفحة الفرق", "error");
+  }
+
+  document.getElementById("p_position").innerHTML = positionOptions();
+  playersCache = await listPlayers();
+  renderPlayers();
+
+  document.getElementById("playerForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    try{
+      await createPlayer({
+        full_name: document.getElementById("p_name").value.trim(),
+        original_team_id: select.value,
+        position: document.getElementById("p_position").value,
+      });
+      showToast("تمت إضافة اللاعب", "success");
+      e.target.reset();
+      playersCache = await listPlayers();
+      renderPlayers();
+    }catch(err){ showToast(err.message, "error"); }
+  });
+})();
+</script>
+</body>
+</html>

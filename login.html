@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+<title>تسجيل الدخول - دوري دراية</title>
+<link rel="stylesheet" href="assets/css/theme.css"/>
+<link rel="stylesheet" href="assets/css/components.css"/>
+<style>
+  .login-wrap{ min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px; }
+  .login-card{ width:100%; max-width:360px; padding:28px 22px; text-align:center; }
+  .login-emoji{ font-size:44px; margin-bottom:6px; }
+  .login-card h1{ font-size:20px; font-weight:800; margin-bottom:4px; }
+  .login-card p{ font-size:13px; color:var(--text2); margin-bottom:22px; }
+  .field-group{ text-align:right; margin-bottom:14px; }
+  .back-link{ display:block;margin-top:16px;font-size:12px;color:var(--text2); }
+  .switch-mode{ margin-top:16px;font-size:13px;color:var(--text2); }
+  .switch-mode a{ color:var(--accent);font-weight:700; }
+  .hint{ font-size:11px;color:var(--text2);margin-top:-6px;margin-bottom:12px;text-align:center; }
+  .pin-group{ text-align:center; }
+  input.field.pin-input{
+    width:150px;margin:0 auto;display:block;text-align:center;
+    font-size:20px;letter-spacing:8px;font-weight:800;
+  }
+  .step2{ display:none; }
+  .step2.open{ display:block; }
+  .change-phone{ font-size:12px;color:var(--text2);margin-top:2px; }
+</style>
+</head>
+<body>
+
+<div class="login-wrap">
+  <div class="login-card glass">
+    <div class="login-emoji" id="entryEmoji">🏆</div>
+    <h1>دوري دراية</h1>
+    <p id="entrySubtitle">سجّل الدخول للمتابعة</p>
+
+    <form id="phoneForm">
+      <div class="field-group">
+        <label class="field-label">رقم الجوال</label>
+        <input class="field" type="tel" id="phone" placeholder="05xxxxxxxx" required autocomplete="username" dir="ltr"/>
+      </div>
+      <button type="submit" class="btn primary block" id="continueBtn">متابعة</button>
+    </form>
+
+    <form id="passForm" class="step2">
+      <p class="change-phone" id="phoneEcho"></p>
+      <div class="field-group" id="nameGroup" style="display:none;">
+        <label class="field-label">اسمك (يظهر للفرق الثانية)</label>
+        <input class="field" id="displayName"/>
+      </div>
+      <div class="field-group pin-group">
+        <label class="field-label" id="passwordLabel">رمز الدخول</label>
+        <input class="field pin-input" type="password" id="password" required autocomplete="current-password"
+          minlength="6" maxlength="6" inputmode="numeric"/>
+      </div>
+      <div class="field-group pin-group" id="confirmGroup" style="display:none;">
+        <label class="field-label">تأكيد الرمز</label>
+        <input class="field pin-input" type="password" id="confirmPassword" autocomplete="new-password"
+          minlength="6" maxlength="6" inputmode="numeric"/>
+      </div>
+      <div class="hint" id="passwordHint" style="display:none;">6 أرقام — اختره بنفسك واحفظه</div>
+      <button type="submit" class="btn primary block" id="submitBtn">دخول</button>
+      <div class="switch-mode"><a href="#" id="changePhone">← تغيير رقم الجوال</a></div>
+    </form>
+
+    <a href="index.html" class="back-link">← رجوع</a>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="js/supabaseClient.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/ui/toast.js"></script>
+<script src="js/ui/theme.js"></script>
+<script>
+const asRole = new URLSearchParams(window.location.search).get("as");
+let currentPhone = "", isFirstActivation = false;
+
+if(asRole === "admin"){
+  document.getElementById("entryEmoji").textContent = "👑";
+  document.getElementById("entrySubtitle").textContent = "تسجيل دخول الإدارة";
+}else if(asRole === "captain"){
+  document.getElementById("entryEmoji").textContent = "🎽";
+  document.getElementById("entrySubtitle").textContent = "تسجيل دخول الكباتن";
+}
+
+(async function(){
+  const session = await getSession();
+  if(session) window.location.href = "standings.html";
+})();
+
+document.getElementById("phoneForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById("continueBtn");
+  currentPhone = document.getElementById("phone").value.trim();
+  btn.disabled = true; btn.textContent = "جارٍ التحقق...";
+  try{
+    const status = await checkCaptainPhone(currentPhone);
+    if(!status.registered){
+      showToast("هذا الرقم غير مسجَّل من الإدارة — تواصل مع إدارة الدوري", "error");
+      return;
+    }
+    const expectedRole = asRole === "admin" ? "super_admin" : asRole === "captain" ? "team_captain" : null;
+    if(expectedRole && status.role !== expectedRole){
+      showToast(asRole === "admin" ? "هذا الرقم ليس من حسابات الإدارة" : "هذا الرقم ليس من حسابات الكباتن", "error");
+      return;
+    }
+    isFirstActivation = !status.activated;
+    document.getElementById("phoneEcho").textContent = `الرقم: ${currentPhone}${status.team_name ? ' · ' + status.team_name : ''}`;
+    document.getElementById("nameGroup").style.display = isFirstActivation ? "block" : "none";
+    document.getElementById("confirmGroup").style.display = isFirstActivation ? "block" : "none";
+    document.getElementById("passwordHint").style.display = isFirstActivation ? "block" : "none";
+    document.getElementById("passwordLabel").textContent = isFirstActivation ? "اختر رمز دخولك (لأول مرة)" : "رمز الدخول";
+    document.getElementById("submitBtn").textContent = isFirstActivation ? "تفعيل الحساب" : "دخول";
+    document.getElementById("phoneForm").style.display = "none";
+    document.getElementById("passForm").classList.add("open");
+    document.getElementById("password").focus();
+  }catch(err){
+    showToast(err.message, "error");
+  }finally{
+    btn.disabled = false; btn.textContent = "متابعة";
+  }
+});
+
+document.getElementById("changePhone").addEventListener("click", (e) => {
+  e.preventDefault();
+  document.getElementById("passForm").classList.remove("open");
+  document.getElementById("phoneForm").style.display = "block";
+  document.getElementById("passForm").reset();
+});
+
+document.getElementById("passForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById("submitBtn");
+  const password = document.getElementById("password").value;
+
+  if(isFirstActivation){
+    const confirmPw = document.getElementById("confirmPassword").value;
+    if(password.length < 6){ showToast("الرمز لازم يكون 6 أرقام على الأقل", "error"); return; }
+    if(password !== confirmPw){ showToast("الرمز وتأكيده غير متطابقين", "error"); return; }
+  }
+
+  btn.disabled = true; btn.textContent = isFirstActivation ? "جارٍ التفعيل..." : "جارٍ الدخول...";
+  try{
+    if(isFirstActivation){
+      await signUp(currentPhone, password, document.getElementById("displayName").value.trim());
+      showToast("تم تفعيل حسابك بنجاح", "success");
+    }else{
+      await signIn(currentPhone, password);
+    }
+    window.location.href = "standings.html";
+  }catch(err){
+    let msg = err.message;
+    if(msg === "Invalid login credentials") msg = "الرمز غير صحيح";
+    showToast(msg, "error");
+    btn.disabled = false;
+    btn.textContent = isFirstActivation ? "تفعيل الحساب" : "دخول";
+  }
+});
+</script>
+</body>
+</html>

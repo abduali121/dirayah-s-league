@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>إدارة الفرق - دوري دراية</title>
+<link rel="stylesheet" href="../assets/css/theme.css"/>
+<link rel="stylesheet" href="../assets/css/components.css"/>
+<style>
+  #adminTabs{ display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px; }
+  .team-card{ padding:14px;margin-bottom:10px; }
+  .team-view-row{ display:flex;align-items:center;gap:10px; }
+  .swatch{ width:20px;height:20px;border-radius:50%;display:inline-block;flex-shrink:0; }
+  .team-view-row .name{ font-weight:700;flex:1; }
+  .team-view-row .meta{ font-size:11px;color:var(--text2); }
+  .team-edit-form{ margin-top:14px;display:none; }
+  .team-edit-form.open{ display:block; }
+  .field-label{ display:block;font-size:12px;color:var(--text2);margin-bottom:6px;font-weight:700; }
+  .activation-pill{ font-size:10.5px;font-weight:800;padding:2px 9px;border-radius:999px;flex-shrink:0; }
+  .activation-pill.on{ background:var(--green-bg);color:var(--green); }
+  .activation-pill.off{ background:var(--orange-bg);color:var(--orange); }
+</style>
+</head>
+<body>
+<header id="appHeader"></header>
+<main class="container">
+  <div id="adminTabs"></div>
+
+  <div class="card glass">
+    <h3 style="font-size:14px;margin-bottom:10px;">إضافة فريق جديد</h3>
+    <form id="teamForm">
+      <div style="margin-bottom:10px;"><label class="field-label">اسم الفريق</label><input class="field" id="f_name" required/></div>
+      <div style="margin-bottom:10px;"><label class="field-label">رقم جوال الكابتن (اختياري الآن، يمكن إضافته لاحقًا)</label><input class="field" id="f_phone" type="tel" placeholder="05xxxxxxxx" dir="ltr"/></div>
+      <div style="margin-bottom:10px;"><label class="field-label">رابط الشعار (اختياري)</label><input class="field" id="f_logo"/></div>
+      <div style="margin-bottom:14px;"><label class="field-label">لون الفريق</label><div id="f_color_wrap"></div></div>
+      <button class="btn primary block" type="submit">إضافة الفريق</button>
+    </form>
+  </div>
+
+  <div id="teamsList"></div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="../js/supabaseClient.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/ui/toast.js"></script>
+<script src="../js/ui/theme.js"></script>
+<script src="../js/ui/adminNav.js"></script>
+<script src="../js/ui/colorSwatches.js"></script>
+<script src="../js/api/teams.js"></script>
+<script>
+let teamsCache = [];
+let activatedTeamIds = new Set();
+
+function renderTeams(){
+  document.getElementById("teamsList").innerHTML = teamsCache.map(t => {
+    const activated = activatedTeamIds.has(t.id);
+    return `
+    <div class="team-card glass">
+      <div class="team-view-row">
+        <span class="swatch" style="background:${t.primary_color}"></span>
+        <span class="name">${t.name}</span>
+        <span class="meta">${t.balance_daraya} د · ${t.captain_phone ? '📱 ' + t.captain_phone : 'بدون رقم كابتن'}</span>
+        ${t.captain_phone ? `<span class="activation-pill ${activated ? 'on' : 'off'}">${activated ? 'تم التفعيل' : 'لم يُفعّل بعد'}</span>` : ''}
+        <button class="btn" style="font-size:12px;padding:6px 10px;" onclick="toggleEdit('${t.id}')">تعديل</button>
+      </div>
+      <div class="team-edit-form" id="edit-${t.id}">
+        <div style="margin-bottom:10px;"><label class="field-label">اسم الفريق</label><input class="field" id="e_name-${t.id}" value="${t.name}" required/></div>
+        <div style="margin-bottom:10px;"><label class="field-label">رقم جوال الكابتن</label><input class="field" id="e_phone-${t.id}" type="tel" dir="ltr" value="${t.captain_phone || ''}"/></div>
+        <div style="margin-bottom:10px;"><label class="field-label">رابط الشعار</label><input class="field" id="e_logo-${t.id}" value="${t.logo_url || ''}"/></div>
+        <div style="margin-bottom:14px;"><label class="field-label">لون الفريق</label>${renderColorSwatches(`e_color-${t.id}`, t.primary_color)}</div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn primary" style="flex:1;" onclick="onSaveTeam('${t.id}')">حفظ التعديلات</button>
+          <button class="btn" onclick="toggleEdit('${t.id}')">إلغاء</button>
+        </div>
+        ${activated ? `<button class="btn" style="width:100%;margin-top:8px;color:var(--red);" onclick="onDeleteCode('${t.id}','${t.name}')">حذف رمز الكابتن (نسيه؟)</button>` : ''}
+      </div>
+    </div>
+  `;
+  }).join("") || `<div class="empty-state">لا توجد فرق بعد. أضف الفرق الستة أعلاه.</div>`;
+}
+
+async function onDeleteCode(teamId, teamName){
+  if(!confirm(`حذف رمز دخول كابتن "${teamName}"؟ سيحتاج يفعّل حسابه من جديد برمز جديد.`)) return;
+  try{
+    await deleteCaptainAccount(teamId);
+    showToast("تم حذف الرمز — الفريق رجع لحالة (لم يُفعّل بعد)", "success");
+    activatedTeamIds = await listActivatedTeamIds();
+    renderTeams();
+  }catch(err){ showToast(err.message, "error"); }
+}
+
+function toggleEdit(teamId){
+  document.getElementById(`edit-${teamId}`).classList.toggle("open");
+}
+
+async function onSaveTeam(teamId){
+  try{
+    await updateTeam(teamId, {
+      name: document.getElementById(`e_name-${teamId}`).value.trim(),
+      logo_url: document.getElementById(`e_logo-${teamId}`).value.trim(),
+      primary_color: document.getElementById(`e_color-${teamId}`).value,
+      captain_phone: document.getElementById(`e_phone-${teamId}`).value.trim(),
+    });
+    showToast("تم حفظ التعديلات", "success");
+    teamsCache = await listTeams();
+    renderTeams();
+  }catch(err){ showToast(err.message, "error"); }
+}
+
+(async function(){
+  const profile = await requireAuth({ adminOnly: true });
+  if(!profile) return;
+  renderAdminNav("teams");
+  document.getElementById("f_color_wrap").innerHTML = renderColorSwatches("f_color");
+  teamsCache = await listTeams();
+  activatedTeamIds = await listActivatedTeamIds();
+  renderTeams();
+
+  document.getElementById("teamForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    try{
+      await createTeam({
+        name: document.getElementById("f_name").value.trim(),
+        captain_phone: document.getElementById("f_phone").value.trim(),
+        logo_url: document.getElementById("f_logo").value.trim(),
+        primary_color: document.getElementById("f_color").value,
+      });
+      showToast("تمت إضافة الفريق", "success");
+      e.target.reset();
+      teamsCache = await listTeams();
+      renderTeams();
+    }catch(err){ showToast(err.message, "error"); }
+  });
+})();
+</script>
+</body>
+</html>

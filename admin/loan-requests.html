@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>صفقات الإعارة - دوري دراية</title>
+<link rel="stylesheet" href="../assets/css/theme.css"/>
+<link rel="stylesheet" href="../assets/css/components.css"/>
+<style>
+  #adminTabs{ display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px; }
+  .claim-card{ padding:14px;margin-bottom:10px; }
+  .claim-head{ display:flex;justify-content:space-between;align-items:center;font-size:14px;font-weight:700; }
+  .claim-meta{ font-size:12px;color:var(--text2);margin-top:6px;line-height:1.6; }
+  .st-pending{ background:var(--orange-bg);color:var(--orange); }
+  .st-approved{ background:var(--green-bg);color:var(--green); }
+  .st-rejected{ background:var(--red-bg);color:var(--red); }
+</style>
+</head>
+<body>
+<header id="appHeader"></header>
+<main class="container">
+  <div id="adminTabs"></div>
+  <p style="font-size:12px;color:var(--text2);margin-bottom:14px;">
+    الكباتن يسجّلون هنا الصفقات بعد الاتفاق مع اللاعب خارج التطبيق. راجع كل صفقة واعتمدها أو ارفضها —
+    لو فريقين سجّلوا نفس اللاعب لنفس المباراة، اعتماد أحدهما يرفض الآخر تلقائيًا.
+  </p>
+  <div id="claimsList"></div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="../js/supabaseClient.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/ui/toast.js"></script>
+<script src="../js/ui/theme.js"></script>
+<script src="../js/ui/adminNav.js"></script>
+<script src="../js/api/teams.js"></script>
+<script src="../js/api/players.js"></script>
+<script src="../js/api/matches.js"></script>
+<script src="../js/api/loans.js"></script>
+<script>
+const CLAIM_STATUS_LABEL = { pending: "بانتظار الموافقة", approved: "معتمدة", rejected: "مرفوضة" };
+let teamsById = {}, playersById = {}, matchesById = {};
+
+async function loadClaims(){
+  const { data, error } = await sb.from("loan_claims_public").select("*").order("created_at", { ascending: false });
+  if(error) throw error;
+  return data;
+}
+
+function renderClaims(claims){
+  document.getElementById("claimsList").innerHTML = claims.map(c => {
+    const player = playersById[c.player_id];
+    const claimingTeam = teamsById[c.claiming_team_id];
+    const originalTeam = teamsById[c.original_team_id];
+    const match = matchesById[c.match_id];
+    return `
+      <div class="claim-card glass">
+        <div class="claim-head">
+          <span>${player ? player.full_name : ''}</span>
+          <span class="status-pill st-${c.status}">${CLAIM_STATUS_LABEL[c.status]}</span>
+        </div>
+        <div class="claim-meta">
+          الأسبوع ${match && match.week ? match.week.week_number : '?'} ·
+          من ${originalTeam ? originalTeam.name : ''} إلى ${claimingTeam ? claimingTeam.name : ''}<br/>
+          المبلغ: ${c.amount !== null ? c.amount + ' دراية' : '—'}
+        </div>
+        ${c.status === 'pending' ? `
+          <div style="display:flex;gap:8px;margin-top:10px;">
+            <button class="btn primary" style="flex:1;font-size:12px;" onclick="onApprove('${c.id}')">اعتماد</button>
+            <button class="btn" style="flex:1;font-size:12px;" onclick="onReject('${c.id}')">رفض</button>
+          </div>
+        ` : ''}
+      </div>
+    `;
+  }).join("") || `<div class="empty-state">لا توجد صفقات مسجَّلة بعد</div>`;
+}
+
+async function reload(){
+  const claims = await loadClaims();
+  renderClaims(claims);
+}
+
+async function onApprove(claimId){
+  try{ await approveLoanClaim(claimId); showToast("تم اعتماد الصفقة", "success"); await reload(); }
+  catch(err){ showToast(err.message, "error"); }
+}
+async function onReject(claimId){
+  try{ await rejectLoanClaim(claimId); showToast("تم رفض الصفقة", "success"); await reload(); }
+  catch(err){ showToast(err.message, "error"); }
+}
+
+(async function(){
+  const profile = await requireAuth({ adminOnly: true });
+  if(!profile) return;
+  renderAdminNav("loans");
+
+  const [teams, players, matches] = await Promise.all([listTeams(), listPlayers(), listMatches()]);
+  teamsById = Object.fromEntries(teams.map(t => [t.id, t]));
+  playersById = Object.fromEntries(players.map(p => [p.id, p]));
+  matchesById = Object.fromEntries(matches.map(m => [m.id, m]));
+
+  await reload();
+})();
+</script>
+</body>
+</html>

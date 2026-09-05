@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>لوحة الإدارة - دوري دراية</title>
+<link rel="stylesheet" href="../assets/css/theme.css"/>
+<link rel="stylesheet" href="../assets/css/components.css"/>
+<style>
+  :root{ --gold-deep:#8f7020; }
+  #adminTabs{ display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px; }
+
+  .stats3{ display:flex;gap:8px;margin-bottom:22px; }
+  .stat{
+    flex:1;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+    text-align:center;padding:14px 4px;
+  }
+  .stat .n{ font-family:'Thmanyah','Tajawal',sans-serif;font-weight:800;font-size:22px;color:var(--accent); }
+  .stat .l{ font-size:10.5px;color:var(--text2);margin-top:3px; }
+
+  .sec-title{ font-size:12px;font-weight:800;color:var(--text2);margin:4px 0 10px; }
+
+  .tile-grid{ display:grid;grid-template-columns:1fr 1fr;gap:10px; }
+  .tile{
+    background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);
+    padding:16px;display:flex;flex-direction:column;gap:12px;text-decoration:none;color:inherit;
+  }
+  .tile.feature{
+    grid-column:1 / -1;
+    background:linear-gradient(120deg,var(--accent),var(--accent2));color:#fff;border:1px solid var(--gold);
+    flex-direction:row;align-items:center;justify-content:space-between;
+    box-shadow:0 14px 26px -12px rgba(15,37,64,.5);position:relative;overflow:hidden;
+  }
+  .tile.feature::after{
+    content:"";position:absolute;inset:0;
+    background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.14) 45%,transparent 60%);
+    transform:translateX(-120%);animation:shine 2.6s ease 1s 1;
+  }
+  @keyframes shine{ to{ transform:translateX(120%); } }
+  .tile.feature .ti{ background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.3); }
+  .tile.feature .ti svg{ stroke:#fff; }
+  .new-badge{
+    background:var(--gold);color:#2a2103;font-size:9.5px;font-weight:800;padding:3px 9px;
+    border-radius:999px;position:relative;z-index:1;flex-shrink:0;
+  }
+
+  .ti{
+    width:40px;height:40px;border-radius:11px;background:var(--gold-light);border:1px solid rgba(184,149,42,.3);
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  }
+  .ti svg{ width:20px;height:20px;stroke:var(--gold-deep); }
+  .tl{ font-weight:800;font-size:13px;position:relative;z-index:1; }
+  .td{ font-size:10px;color:var(--text2);margin-top:2px;position:relative;z-index:1; }
+  .tile.feature .td{ color:rgba(255,255,255,.75); }
+</style>
+</head>
+<body>
+<header id="appHeader"></header>
+<main class="container">
+  <div id="adminTabs"></div>
+
+  <div class="stats3" id="statGrid"></div>
+
+  <div class="sec-title">الإدارة</div>
+  <div class="tile-grid">
+    <a href="announcements.html" class="tile feature">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5.5L4 8v4c0 4.5 3 7.5 8 9 5-1.5 8-4.5 8-9V8l-4-1.5M8 12l2.5 2.5L16 9"/></svg></span>
+        <div><div class="tl">تصريحات الدوري</div><div class="td">انشر تصريحًا يحمّس الشباب</div></div>
+      </div>
+      <span class="new-badge">جديد</span>
+    </a>
+
+    <a href="teams.html" class="tile">
+      <span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3c2.5 2.5 2.5 15.5 0 18M3 12h18"/></svg></span>
+      <div><div class="tl">الفرق</div><div class="td">الأسماء والألوان</div></div>
+    </a>
+    <a href="players.html" class="tile">
+      <span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4l4 2 4-2 3 3-2 2v11H7V9L5 7z"/></svg></span>
+      <div><div class="tl">اللاعبون</div><div class="td">القوائم والمراكز</div></div>
+    </a>
+    <a href="matches.html" class="tile">
+      <span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/></svg></span>
+      <div><div class="tl">المباريات</div><div class="td">الجدول والنتائج</div></div>
+    </a>
+    <a href="loan-requests.html" class="tile">
+      <span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 12h8M8 12l3-3M8 12l3 3M16 12l-3-3M16 12l-3 3"/><circle cx="12" cy="12" r="9"/></svg></span>
+      <div><div class="tl">صفقات الإعارة</div><div class="td">مراجعة واعتماد</div></div>
+    </a>
+    <a href="photos.html" class="tile">
+      <span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="M21 16l-5-4-4 3-3-2-3 3"/></svg></span>
+      <div><div class="tl">صور الدوري</div><div class="td">لقطات من المباريات</div></div>
+    </a>
+    <a href="balances.html" class="tile">
+      <span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg></span>
+      <div><div class="tl">الأرصدة</div><div class="td">تعديل وسجل مالي</div></div>
+    </a>
+    <a href="audit.html" class="tile">
+      <span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h6l1 3H8l1-3zM6 7h12l-1 13H7L6 7z"/></svg></span>
+      <div><div class="tl">سجل التدقيق</div><div class="td">كل التعديلات</div></div>
+    </a>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="../js/supabaseClient.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/ui/toast.js"></script>
+<script src="../js/ui/theme.js"></script>
+<script src="../js/ui/adminNav.js"></script>
+<script src="../js/api/teams.js"></script>
+<script src="../js/api/players.js"></script>
+<script src="../js/api/matches.js"></script>
+<script>
+(async function(){
+  const profile = await requireAuth({ adminOnly: true });
+  if(!profile) return;
+  renderAdminNav("home");
+
+  const [teams, players, matches] = await Promise.all([listTeams(), listPlayers(), listMatches()]);
+  const completed = matches.filter(m => m.status === "completed").length;
+  document.getElementById("statGrid").innerHTML = `
+    <div class="stat"><div class="n">${teams.length}</div><div class="l">فرق</div></div>
+    <div class="stat"><div class="n">${players.length}</div><div class="l">لاعبون</div></div>
+    <div class="stat"><div class="n" dir="ltr">${completed} / 15</div><div class="l">مباريات مُعتمدة</div></div>
+  `;
+})();
+</script>
+</body>
+</html>

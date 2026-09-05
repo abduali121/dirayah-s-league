@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "دوري دراية",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "5183"],
+      "port": 5183
+    }
+  ]
+}

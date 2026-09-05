@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>صور الدوري - دوري دراية</title>
+<link rel="stylesheet" href="../assets/css/theme.css"/>
+<link rel="stylesheet" href="../assets/css/components.css"/>
+<style>
+  #adminTabs{ display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px; }
+  .composer{ padding:16px;margin-bottom:18px; }
+  .composer input[type="text"]{
+    width:100%;border:1px solid var(--border);border-radius:var(--radius-sm);
+    background:var(--surface2);color:var(--text);padding:10px 12px;font-family:inherit;font-size:14px;margin-bottom:10px;
+  }
+  .img-pick-btn{
+    display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--text2);
+    border:1px dashed var(--border);border-radius:var(--radius-sm);padding:8px 12px;cursor:pointer;margin-bottom:10px;
+  }
+  /* هذا بالضبط نفس مقاس ونسبة العرض المستخدمة بالموقع الحقيقي — عشان المعاينة هنا
+     تطابق تمامًا شكلها النهائي عند النشر، بلا مفاجآت بالقص */
+  .photo-frame{
+    width:100%;aspect-ratio:4/3;border-radius:var(--radius-lg);overflow:hidden;
+    background:var(--surface2);display:none;margin-bottom:10px;position:relative;
+  }
+  .photo-frame.show{ display:block; }
+  .photo-frame img{ width:100%;height:100%;object-fit:cover;display:block; }
+  .photo-frame .remove{
+    position:absolute;top:8px;left:8px;width:26px;height:26px;border-radius:50%;background:rgba(0,0,0,.55);
+    color:#fff;border:none;cursor:pointer;font-size:14px;z-index:1;
+  }
+  .composer-row{ display:flex;gap:10px;align-items:center; }
+  .composer-row select{
+    flex:1;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface2);
+    color:var(--text);padding:9px 10px;font-family:inherit;font-size:13px;
+  }
+  .photo-card{ padding:14px;margin-bottom:10px; }
+  .photo-card .frame{ width:100%;aspect-ratio:4/3;border-radius:var(--radius-sm);overflow:hidden;margin-bottom:10px; }
+  .photo-card .frame img{ width:100%;height:100%;object-fit:cover;display:block; }
+  .photo-card-head{ display:flex;justify-content:space-between;align-items:flex-start;gap:10px; }
+  .photo-caption{ font-size:13px;font-weight:600;line-height:1.6; }
+  .photo-meta{ font-size:11px;color:var(--text2);margin-top:6px; }
+  .photo-del{ flex-shrink:0;background:none;border:none;color:var(--red);font-size:16px;cursor:pointer;padding:4px; }
+</style>
+</head>
+<body>
+<header id="appHeader"></header>
+<main class="container">
+  <div id="adminTabs"></div>
+
+  <div class="composer glass">
+    <h3 style="font-size:14px;margin-bottom:10px;">إضافة صورة جديدة</h3>
+    <label class="img-pick-btn">
+      📷 اختيار صورة
+      <input type="file" accept="image/*" id="imageInput" style="display:none;"/>
+    </label>
+    <div class="photo-frame" id="photoFrame">
+      <button class="remove" type="button" onclick="clearImage()">✕</button>
+      <img id="photoPreview" alt="معاينة الصورة"/>
+    </div>
+    <input type="text" id="captionInput" maxlength="140" placeholder="تعليق قصير (اختياري)"/>
+    <div class="composer-row">
+      <select id="teamSelect">
+        <option value="">باسم الإدارة (عام)</option>
+      </select>
+      <button class="btn primary" style="padding:10px 18px;font-size:13px;" id="publishBtn" onclick="onPublish()">نشر</button>
+    </div>
+  </div>
+
+  <div id="photosList"></div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="../js/supabaseClient.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/ui/toast.js"></script>
+<script src="../js/ui/theme.js"></script>
+<script src="../js/ui/adminNav.js"></script>
+<script src="../js/api/teams.js"></script>
+<script src="../js/api/photos.js"></script>
+<script>
+let selectedImageFile = null;
+let photosCache = [];
+
+function timeAgo(dateStr){
+  const diffMin = Math.max(1, Math.round((Date.now() - new Date(dateStr).getTime()) / 60000));
+  if(diffMin < 60) return `قبل ${diffMin} د`;
+  const diffHr = Math.round(diffMin / 60);
+  if(diffHr < 24) return `قبل ${diffHr} س`;
+  return `قبل ${Math.round(diffHr / 24)} يوم`;
+}
+
+function clearImage(){
+  selectedImageFile = null;
+  document.getElementById("imageInput").value = "";
+  document.getElementById("photoFrame").classList.remove("show");
+  document.getElementById("photoPreview").src = "";
+}
+
+document.getElementById("imageInput").addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  if(!file) return;
+  selectedImageFile = file;
+  document.getElementById("photoPreview").src = URL.createObjectURL(file);
+  document.getElementById("photoFrame").classList.add("show");
+});
+
+function renderList(items){
+  document.getElementById("photosList").innerHTML = items.map(p => `
+    <div class="photo-card glass">
+      <div class="frame"><img src="${p.image_url}" alt=""/></div>
+      <div class="photo-card-head">
+        <div>
+          ${p.caption ? `<div class="photo-caption">${p.caption}</div>` : ''}
+          <div class="photo-meta">${p.team ? p.team.name : 'الإدارة'} · ${timeAgo(p.created_at)}</div>
+        </div>
+        <button class="photo-del" title="حذف" onclick="onDelete('${p.id}')">✕</button>
+      </div>
+    </div>
+  `).join("") || `<div class="empty-state">لا توجد صور بعد. أضف أول صورة!</div>`;
+}
+
+async function reload(){
+  photosCache = await listPhotos(50);
+  renderList(photosCache);
+}
+
+async function onPublish(){
+  if(!selectedImageFile){ showToast("اختر صورة أولًا", "error"); return; }
+  const teamId = document.getElementById("teamSelect").value || null;
+  const caption = document.getElementById("captionInput").value.trim();
+  const btn = document.getElementById("publishBtn");
+  btn.disabled = true; btn.textContent = "جارٍ النشر...";
+  try{
+    const imageUrl = await uploadPhotoImage(selectedImageFile);
+    await createPhoto(imageUrl, caption, teamId);
+    clearImage();
+    document.getElementById("captionInput").value = "";
+    showToast("تم نشر الصورة", "success");
+    await reload();
+  }catch(err){ showToast(err.message, "error"); }
+  finally{ btn.disabled = false; btn.textContent = "نشر"; }
+}
+
+async function onDelete(id){
+  try{
+    const p = photosCache.find(x => x.id === id);
+    await deletePhoto(id);
+    if(p?.image_url) await deletePhotoImage(p.image_url);
+    showToast("تم الحذف", "success");
+    await reload();
+  }catch(err){ showToast(err.message, "error"); }
+}
+
+(async function(){
+  const profile = await requireAuth({ adminOnly: true });
+  if(!profile) return;
+  renderAdminNav("photos");
+
+  const teams = await listTeams();
+  const teamSelect = document.getElementById("teamSelect");
+  teams.forEach(t => {
+    const opt = document.createElement("option");
+    opt.value = t.id; opt.textContent = `باسم ${t.name}`;
+    teamSelect.appendChild(opt);
+  });
+
+  await reload();
+})();
+</script>
+</body>
+</html>

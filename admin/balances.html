@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>إدارة الأرصدة - دوري دراية</title>
+<link rel="stylesheet" href="../assets/css/theme.css"/>
+<link rel="stylesheet" href="../assets/css/components.css"/>
+<style>
+  #adminTabs{ display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px; }
+  .row-2{ display:grid;grid-template-columns:1fr 1fr;gap:10px; }
+  .ledger-row{ display:flex;justify-content:space-between;align-items:center;padding:10px 14px;margin-bottom:6px;font-size:13px; }
+  .ledger-row .delta.pos{ color:var(--green);font-weight:800; }
+  .ledger-row .delta.neg{ color:var(--red);font-weight:800; }
+  .ledger-row .meta{ color:var(--text2);font-size:11px; }
+</style>
+</head>
+<body>
+<header id="appHeader"></header>
+<main class="container">
+  <div id="adminTabs"></div>
+
+  <div class="card glass">
+    <h3 style="font-size:14px;margin-bottom:10px;">تعديل رصيد يدويًا</h3>
+    <form id="adjustForm">
+      <div style="margin-bottom:10px;"><label class="field-label">الفريق</label><select class="field" id="a_team" required></select></div>
+      <div class="row-2" style="margin-bottom:10px;">
+        <div><label class="field-label">المقدار (+/-)</label><input class="field" type="number" id="a_delta" required/></div>
+        <div><label class="field-label">السبب</label><input class="field" id="a_reason" required/></div>
+      </div>
+      <button class="btn primary block" type="submit">تنفيذ التعديل</button>
+    </form>
+  </div>
+
+  <h3 style="font-size:13px;color:var(--text2);margin:16px 0 8px;">السجل المالي الكامل</h3>
+  <div id="ledgerList"></div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="../js/supabaseClient.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/ui/toast.js"></script>
+<script src="../js/ui/theme.js"></script>
+<script src="../js/ui/adminNav.js"></script>
+<script src="../js/api/teams.js"></script>
+<script src="../js/api/ledger.js"></script>
+<script>
+const REASON_LABELS = {
+  match_result: "نتيجة مباراة", loan_fee: "رسم إعارة",
+  admin_adjustment: "تعديل إداري", admin_reversal: "عكس/تصحيح", season_init: "بداية الموسم",
+};
+
+async function renderLedger(){
+  const rows = await listLedger();
+  document.getElementById("ledgerList").innerHTML = rows.map(r => `
+    <div class="ledger-row glass">
+      <div>
+        <div>${r.teams.name}</div>
+        <div class="meta">${REASON_LABELS[r.reason] || r.reason}${r.note ? ' · ' + r.note : ''}</div>
+      </div>
+      <div class="delta ${r.delta >= 0 ? 'pos' : 'neg'}">${r.delta >= 0 ? '+' : ''}${r.delta}</div>
+    </div>
+  `).join("") || `<div class="empty-state">لا توجد حركات مالية بعد</div>`;
+}
+
+(async function(){
+  const profile = await requireAuth({ adminOnly: true });
+  if(!profile) return;
+  renderAdminNav("balances");
+
+  const teams = await listTeams();
+  document.getElementById("a_team").innerHTML = teams.map(t => `<option value="${t.id}">${t.name} (${t.balance_daraya} د)</option>`).join("");
+
+  await renderLedger();
+
+  document.getElementById("adjustForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    try{
+      await adjustBalance(
+        document.getElementById("a_team").value,
+        parseInt(document.getElementById("a_delta").value, 10),
+        document.getElementById("a_reason").value.trim()
+      );
+      showToast("تم تعديل الرصيد", "success");
+      e.target.reset();
+      await renderLedger();
+      const refreshed = await listTeams();
+      document.getElementById("a_team").innerHTML = refreshed.map(t => `<option value="${t.id}">${t.name} (${t.balance_daraya} د)</option>`).join("");
+    }catch(err){ showToast(err.message, "error"); }
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>مباراة الأسبوع - دوري دراية</title>
+<link rel="stylesheet" href="assets/css/theme.css"/>
+<link rel="stylesheet" href="assets/css/components.css"/>
+<style>
+  .match-hero{ padding:20px 16px;text-align:center; }
+  .vs-row{ display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:8px; }
+  .vs-team{ flex:1;text-align:center; }
+  .vs-team .logo{ width:52px;height:52px;border-radius:14px;margin:0 auto 8px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:20px; }
+  .vs-team .name{ font-weight:800;font-size:14px; }
+  .vs-team .bal{ font-size:12px;color:var(--text2);margin-top:2px; }
+  .vs-mid{ font-size:12px;color:var(--text2);font-weight:800; }
+  .stake-badge{ display:inline-block;margin-top:8px;background:var(--gold-light);color:var(--gold);font-weight:800;font-size:12px;padding:5px 14px;border-radius:999px; }
+  .section-title{ font-size:13px;font-weight:800;color:var(--text2);margin:18px 0 8px; }
+  .lineup-grid{ display:grid;grid-template-columns:1fr 1fr;gap:10px; }
+  .lineup-col{ padding:12px; }
+  .lineup-col h4{ font-size:12px;margin-bottom:8px;text-align:center; }
+  .player-check{ display:flex;align-items:center;gap:6px;font-size:12px;padding:6px 0; }
+  .loan-tag{ font-size:10px;background:var(--blue-bg);color:var(--blue);padding:2px 6px;border-radius:6px;margin-inline-start:4px; }
+  .claim-card{ padding:12px 14px;margin-bottom:8px; }
+  .claim-head{ display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:700; }
+  .claim-meta{ font-size:11px;color:var(--text2);margin-top:4px; }
+  .st-pending{ background:var(--orange-bg);color:var(--orange); }
+  .st-approved{ background:var(--green-bg);color:var(--green); }
+  .st-rejected{ background:var(--red-bg);color:var(--red); }
+  .event-item{ font-size:12px;padding:8px 0;border-bottom:1px solid var(--glass-border); }
+  .event-item:last-child{ border-bottom:none; }
+</style>
+</head>
+<body>
+<header id="appHeader"></header>
+<main class="container">
+  <div id="matchHero" class="card glass match-hero"></div>
+
+  <div class="section-title">التشكيلات</div>
+  <div class="lineup-grid" id="lineupGrid"></div>
+
+  <div class="section-title">اللاعبون المُعارون لهذه المباراة</div>
+  <div id="loansList"></div>
+
+  <div class="section-title">صفقات الإعارة</div>
+  <div id="claimFormWrap"></div>
+  <div id="claimsList"></div>
+
+  <div class="section-title">أهم الأحداث</div>
+  <div class="card glass" id="eventsCard"></div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="js/supabaseClient.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/ui/toast.js"></script>
+<script src="js/ui/theme.js"></script>
+<script src="js/ui/header.js"></script>
+<script src="js/api/teams.js"></script>
+<script src="js/api/players.js"></script>
+<script src="js/api/matches.js"></script>
+<script src="js/api/loans.js"></script>
+<script>
+const matchId = new URLSearchParams(window.location.search).get("id");
+let profile, match, playersById = {}, teamsById = {};
+
+const STATUS_LABEL = { scheduled: "مجدولة", live: "جارية الآن", awaiting_result: "بانتظار النتيجة", completed: "مُعتمدة", cancelled: "ملغاة" };
+const CLAIM_STATUS_LABEL = { pending: "بانتظار موافقة المدير", approved: "معتمدة ✓", rejected: "مرفوضة" };
+
+function teamInitial(t){
+  if(!t.logo_url) return t.name.slice(0,1);
+  return `<img src="${t.logo_url}" style="width:100%;height:100%;object-fit:cover;border-radius:14px;"
+    onerror="this.style.display='none';this.nextElementSibling.style.display='inline';"/><span style="display:none;">${t.name.slice(0,1)}</span>`;
+}
+
+function renderHero(){
+  const m = match;
+  document.getElementById("matchHero").innerHTML = `
+    <div style="font-size:12px;color:var(--text2);margin-bottom:10px;">أسبوع ${m.week.week_number} · ${STATUS_LABEL[m.status]}</div>
+    <div class="vs-row">
+      <div class="vs-team"><div class="logo" style="background:${m.team_a.primary_color}">${teamInitial(m.team_a)}</div><div class="name">${m.team_a.name}</div><div class="bal">${m.status==='completed' ? `${m.team_a_balance_before} ← ${m.team_a_balance_after}` : m.team_a.balance_daraya + ' د'}</div></div>
+      <div class="vs-mid">VS</div>
+      <div class="vs-team"><div class="logo" style="background:${m.team_b.primary_color}">${teamInitial(m.team_b)}</div><div class="name">${m.team_b.name}</div><div class="bal">${m.status==='completed' ? `${m.team_b_balance_before} ← ${m.team_b_balance_after}` : m.team_b.balance_daraya + ' د'}</div></div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:center;">
+      <span class="stake-badge">${m.team_a.name} يدخل بـ${m.team_a_stake}</span>
+      <span class="stake-badge">${m.team_b.name} يدخل بـ${m.team_b_stake}</span>
+    </div>
+    ${m.status === 'completed' ? `<div style="margin-top:10px;font-weight:800;color:var(--gold);">🏆 فاز ${m.winner_team_id === m.team_a_id ? m.team_a.name : m.team_b.name}</div>` : ''}
+  `;
+}
+
+// الكابتن يقدر يعدّل تشكيلة فريقه بنفسه (أو المدير أي فريق)، وفقط قبل اعتماد نتيجة المباراة
+function canEditLineup(teamId){
+  return profile && match.status !== "completed" && (profile.role === "super_admin" || profile.team_id === teamId);
+}
+
+// المؤهّلون لتمثيل الفريق: لاعبوه الأصليون النشطون + أي لاعب مُعار له بهذه المباراة تحديدًا
+function eligiblePlayersForTeam(teamId, loans){
+  const own = Object.values(playersById).filter(p => p.original_team_id === teamId && p.is_active);
+  const loanedIn = loans.filter(l => l.borrowing_team_id === teamId).map(l => playersById[l.player_id]).filter(Boolean);
+  return [...own, ...loanedIn];
+}
+
+async function renderLineups(loans){
+  const [playersA, playersB] = await Promise.all([
+    sb.from("match_lineups").select("*, players:player_id(full_name)").eq("match_id", matchId).eq("team_id", match.team_a_id),
+    sb.from("match_lineups").select("*, players:player_id(full_name)").eq("match_id", matchId).eq("team_id", match.team_b_id),
+  ]);
+
+  const col = (teamName, rows, teamId) => {
+    const currentIds = new Set((rows.data || []).map(r => r.player_id));
+    const listHtml = (rows.data || []).map(r => {
+      const isLoan = loans.some(l => l.player_id === r.player_id && l.borrowing_team_id === teamId);
+      return `<div class="player-check">${r.players.full_name}${isLoan ? '<span class="loan-tag">مُعار</span>' : ''}</div>`;
+    }).join("") || '<div class="empty-state" style="padding:10px;">لم تُحدَّد التشكيلة بعد</div>';
+
+    const editHtml = canEditLineup(teamId) ? `
+      <button class="btn" style="font-size:11px;width:100%;margin-top:8px;" onclick="toggleLineupEdit('${teamId}')">تعديل التشكيلة</button>
+      <div id="lineup-edit-${teamId}" style="display:none;margin-top:10px;">
+        ${eligiblePlayersForTeam(teamId, loans).map(p => `
+          <label class="player-check" style="cursor:pointer;">
+            <input type="checkbox" value="${p.id}" ${currentIds.has(p.id) ? "checked" : ""}/>
+            ${p.full_name}${p.original_team_id !== teamId ? '<span class="loan-tag">مُعار</span>' : ''}
+          </label>
+        `).join("") || '<div class="empty-state" style="padding:10px;">لا يوجد لاعبون مؤهّلون</div>'}
+        <button class="btn primary block" style="margin-top:8px;font-size:12px;" onclick="onSaveLineup('${teamId}')">حفظ التشكيلة</button>
+      </div>
+    ` : "";
+
+    return `<div class="lineup-col glass"><h4>${teamName}</h4>${listHtml}${editHtml}</div>`;
+  };
+  document.getElementById("lineupGrid").innerHTML = col(match.team_a.name, playersA, match.team_a_id) + col(match.team_b.name, playersB, match.team_b_id);
+}
+
+function toggleLineupEdit(teamId){
+  const el = document.getElementById(`lineup-edit-${teamId}`);
+  el.style.display = el.style.display === "none" ? "block" : "none";
+}
+
+async function onSaveLineup(teamId){
+  const el = document.getElementById(`lineup-edit-${teamId}`);
+  const ids = [...el.querySelectorAll('input[type="checkbox"]:checked')].map(cb => cb.value);
+  try{
+    await setLineup(matchId, teamId, ids);
+    showToast("تم حفظ التشكيلة", "success");
+    await loadAll();
+  }catch(err){ showToast(err.message, "error"); }
+}
+
+function renderLoans(loans){
+  document.getElementById("loansList").innerHTML = loans.length ? loans.map(l => `
+    <div class="card glass" style="padding:10px 14px;font-size:13px;display:flex;justify-content:space-between;">
+      <span>${l.players.full_name}</span>
+      <span style="color:var(--text2);font-size:12px;">${l.original.name} ⇠ ${l.borrower.name}</span>
+    </div>
+  `).join("") : `<div class="empty-state">لا يوجد لاعبون مُعارون في هذه المباراة</div>`;
+}
+
+function renderClaimForm(){
+  const wrap = document.getElementById("claimFormWrap");
+  const canClaim = profile && profile.team_id && (profile.team_id === match.team_a_id || profile.team_id === match.team_b_id);
+  if(!canClaim){ wrap.innerHTML = ""; return; }
+
+  const eligiblePlayers = Object.values(playersById).filter(p => p.original_team_id !== profile.team_id);
+  wrap.innerHTML = `
+    <div class="card glass">
+      <h4 style="font-size:13px;margin-bottom:10px;">سجّل صفقة (بعد الاتفاق مع اللاعب خارج التطبيق)</h4>
+      <form id="claimForm">
+        <div style="margin-bottom:10px;"><label class="field-label">اللاعب اللي تعاقدت معه</label>
+          <select class="field" id="c_player" required>
+            ${eligiblePlayers.map(p => `<option value="${p.id}">${p.full_name} (${teamsById[p.original_team_id]?.name || ''})</option>`).join("")}
+          </select>
+        </div>
+        <div style="margin-bottom:10px;"><label class="field-label">المبلغ المتفق عليه (يبقى سريًا)</label><input class="field" type="number" id="c_amount" min="1" required/></div>
+        <button class="btn primary block" type="submit">تسجيل الصفقة</button>
+      </form>
+    </div>
+  `;
+  document.getElementById("claimForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    try{
+      await claimPlayerLoan(matchId, document.getElementById("c_player").value, parseInt(document.getElementById("c_amount").value, 10));
+      showToast("تم تسجيل الصفقة، بانتظار موافقة المدير", "success");
+      e.target.reset();
+      await renderClaims();
+    }catch(err){ showToast(err.message, "error"); }
+  });
+}
+
+async function renderClaims(){
+  const claims = await listClaimsForMatch(matchId);
+  const list = document.getElementById("claimsList");
+  if(!claims.length){ list.innerHTML = `<div class="empty-state">لا توجد صفقات مسجَّلة لهذه المباراة بعد</div>`; return; }
+
+  list.innerHTML = claims.map(c => {
+    const player = playersById[c.player_id];
+    const claimingTeam = teamsById[c.claiming_team_id];
+    const showAdminActions = profile && profile.role === "super_admin" && c.status === "pending";
+    return `
+      <div class="claim-card glass">
+        <div class="claim-head">
+          <span>${player ? player.full_name : ''}</span>
+          <span class="status-pill st-${c.status}">${CLAIM_STATUS_LABEL[c.status]}</span>
+        </div>
+        <div class="claim-meta">
+          الفريق المستعير: ${claimingTeam ? claimingTeam.name : ''}
+          ${c.amount !== null ? ' · المبلغ: ' + c.amount + ' د' : ''}
+        </div>
+        ${showAdminActions ? `
+          <div style="display:flex;gap:8px;margin-top:10px;">
+            <button class="btn primary" style="flex:1;font-size:12px;" onclick="onApproveClaim('${c.id}')">اعتماد</button>
+            <button class="btn" style="flex:1;font-size:12px;" onclick="onRejectClaim('${c.id}')">رفض</button>
+          </div>
+        ` : ''}
+      </div>
+    `;
+  }).join("");
+}
+
+async function onApproveClaim(claimId){
+  try{ await approveLoanClaim(claimId); showToast("تم اعتماد الصفقة", "success"); await loadAll(); }
+  catch(err){ showToast(err.message, "error"); }
+}
+async function onRejectClaim(claimId){
+  try{ await rejectLoanClaim(claimId); showToast("تم رفض الصفقة", "success"); await renderClaims(); }
+  catch(err){ showToast(err.message, "error"); }
+}
+
+async function renderEvents(){
+  const events = await listMatchEvents(matchId);
+  const adminForm = profile && profile.role === "super_admin" ? `
+    <form id="eventForm" style="display:flex;gap:8px;margin-bottom:10px;">
+      <input class="field" id="eventText" placeholder="أضف حدثًا..." required style="flex:1;"/>
+      <button class="btn primary" type="submit">إضافة</button>
+    </form>` : '';
+  document.getElementById("eventsCard").innerHTML = adminForm + (events.length
+    ? events.map(e => `<div class="event-item">${e.description}</div>`).join("")
+    : `<div class="empty-state">لا توجد أحداث بعد</div>`);
+
+  const form = document.getElementById("eventForm");
+  if(form) form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    try{
+      await addMatchEvent(matchId, document.getElementById("eventText").value.trim());
+      await renderEvents();
+    }catch(err){ showToast(err.message, "error"); }
+  });
+}
+
+async function loadAll(){
+  match = await getMatch(matchId);
+  const [teams, players] = await Promise.all([listTeams(), listPlayers()]);
+  teamsById = Object.fromEntries(teams.map(t => [t.id, t]));
+  playersById = Object.fromEntries(players.map(p => [p.id, p]));
+  const loans = await listLoansForMatch(matchId);
+
+  renderHero();
+  await renderLineups(loans);
+  renderLoans(loans);
+  renderClaimForm();
+  await renderClaims();
+  await renderEvents();
+}
+
+(async function(){
+  profile = await optionalAuth();
+  if(!matchId){ document.querySelector("main").innerHTML = `<div class="empty-state">لم يتم تحديد مباراة</div>`; return; }
+  renderHeader(profile, "match");
+
+  await loadAll();
+
+  sb.channel(`match-${matchId}`)
+    .on("postgres_changes", { event: "*", schema: "public", table: "matches", filter: `id=eq.${matchId}` }, loadAll)
+    .on("postgres_changes", { event: "*", schema: "public", table: "loan_claims", filter: `match_id=eq.${matchId}` }, renderClaims)
+    .on("postgres_changes", { event: "*", schema: "public", table: "match_events", filter: `match_id=eq.${matchId}` }, renderEvents)
+    .on("postgres_changes", { event: "*", schema: "public", table: "match_lineups", filter: `match_id=eq.${matchId}` }, loadAll)
+    .subscribe();
+})();
+</script>
+</body>
+</html>

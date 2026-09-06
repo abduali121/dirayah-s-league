@@ -9,7 +9,7 @@ function renderHeader(profile, activePage){
   const assetsPrefix = inAdmin ? "../assets/" : "assets/";
 
   el.innerHTML = `
-    <div class="brand">
+    <a class="brand" href="${rootPrefix}index.html" style="text-decoration:none;color:inherit;">
       <span class="brand-logo">
         <img src="${assetsPrefix}daraya-logo-light.png" alt="مجموعة دراية"/>
       </span>
@@ -17,8 +17,10 @@ function renderHeader(profile, activePage){
         <h1>دوري دراية</h1>
         <p>${profile ? profile.display_name : ""}</p>
       </div>
-    </div>
-    ${profile ? `<button class="btn" style="padding:8px 12px;font-size:12px;" onclick="signOut()">خروج</button>` : ``}
+    </a>
+    ${profile
+      ? `<button class="btn" style="padding:8px 12px;font-size:12px;" onclick="signOut()">خروج</button>`
+      : `<a class="btn" style="padding:8px 12px;font-size:12px;" href="${rootPrefix}index.html">تسجيل الدخول</a>`}
   `;
 
   const tabs = [

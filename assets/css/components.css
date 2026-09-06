@@ -15,23 +15,24 @@ header::after{
 .brand .emoji{font-size:22px;}
 .brand-logo{ width:44px;height:34px;display:flex;align-items:center;flex-shrink:0; }
 .brand-logo img{ width:44px;height:34px;object-fit:contain;display:block; }
-.logo-light{display:block;} .logo-dark{display:none;}
-[data-theme="dark"] .logo-light{display:none;} [data-theme="dark"] .logo-dark{display:block;}
 .brand h1{font-size:16px;font-weight:800;line-height:1.2;}
 .brand p{font-size:11px;color:var(--text2);}
 
-.theme-btn{
-  width:56px;height:32px;border-radius:999px;border:1.5px solid var(--glass-border);
-  background:linear-gradient(135deg,rgba(255,255,255,.72),rgba(232,238,245,.88));
-  cursor:pointer;display:flex;align-items:center;padding:3px;position:relative;
-  box-shadow:0 4px 14px rgba(26,58,92,.10);transition:all .25s ease;flex-shrink:0;
+/* بار التنقل السفلي الثابت — يظهر بكل صفحات اللاعبين/الكباتن العامة */
+body.has-tabbar{ padding-bottom:calc(64px + env(safe-area-inset-bottom)); }
+.bottom-tabbar{
+  position:fixed;bottom:0;left:0;right:0;z-index:60;
+  display:flex;background:var(--surface);border-top:1px solid var(--border);
+  padding:8px 6px calc(8px + env(safe-area-inset-bottom));
+  box-shadow:0 -6px 20px -8px rgba(15,31,51,.12);
 }
-.theme-btn::before{
-  content:"";position:absolute;top:3px;bottom:3px;width:24px;border-radius:50%;right:4px;
-  background:radial-gradient(circle at 35% 30%,#3a4d68,#17253a 70%);
-  transition:transform .3s cubic-bezier(.34,1.56,.64,1);
+.tab-item{
+  flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;
+  padding:5px 2px;border-radius:12px;color:var(--text2);font-size:10.5px;font-weight:700;
+  transition:color .15s;
 }
-[data-theme="dark"] .theme-btn::before{ transform:translateX(-24px); background:radial-gradient(circle at 35% 30%,#f8fafc,#e7eef8 72%); }
+.tab-item .tab-icon{ font-size:19px;line-height:1; }
+.tab-item.active{ color:var(--gold-deep); }
 
 .card{ padding:16px; margin-bottom:14px; }
 .btn{

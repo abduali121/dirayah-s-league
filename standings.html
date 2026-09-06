@@ -7,9 +7,6 @@
 <link rel="stylesheet" href="assets/css/theme.css"/>
 <link rel="stylesheet" href="assets/css/components.css"/>
 <style>
-  :root{ --gold-deep:#8f7020; }
-  [data-theme="dark"]{ --gold-deep:var(--gold); }
-
   .live-strip{
     display:flex;align-items:center;gap:6px;font-size:10.5px;font-weight:700;color:var(--green);
     margin:0 0 16px;
@@ -110,6 +107,18 @@
     background:var(--gold-light);color:var(--gold-deep);
   }
 
+  /* توقعات مفتوحة */
+  .predhub-card{ padding:14px;margin-bottom:10px; }
+  .predhub-head{ display:flex;justify-content:space-between;align-items:center;font-size:12px;margin-bottom:10px; }
+  .predhub-week{ font-weight:800;color:var(--text2); }
+  .predhub-reward{ font-weight:800;color:var(--gold-deep);background:var(--gold-light);padding:3px 10px;border-radius:999px;font-size:11px; }
+  .predhub-row{ display:flex;gap:8px; }
+  .predhub-btn{
+    flex:1;padding:10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface2);
+    color:var(--text);font-weight:700;font-size:12.5px;cursor:pointer;
+  }
+  .predhub-btn.picked{ background:var(--gold);color:#2a2103;border-color:var(--gold); }
+
   /* الترتيب */
   .podium{
     display:block;position:relative;border-radius:var(--radius-lg);padding:16px 16px 14px;margin-bottom:10px;overflow:hidden;
@@ -162,6 +171,14 @@
       <div class="matches-stack" id="matchesStack"></div>
       <div class="dots" id="matchesDots"></div>
     </div>
+  </div>
+
+  <div id="predictionsHubSection" hidden>
+    <div class="sec-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r=".5" fill="currentColor"/></svg>
+      توقعات مفتوحة
+    </div>
+    <div id="predictionsHubList"></div>
   </div>
 
   <div id="tickerSection">
@@ -412,18 +429,73 @@ async function renderStandings(){
   list.innerHTML = leaderHtml + `<div class="rows">${restHtml}</div>`;
 }
 
+// كباتن الفرق غير المشاركة بمباراة معيّنة يقدرون يتوقعون فائزها من هنا مباشرة —
+// بدل ما يحتاجون يروحون لصفحة كل مباراة يدوّرون عليها
+async function renderPredictionsHub(){
+  const section = document.getElementById("predictionsHubSection");
+  if(!profile || !profile.team_id){ section.hidden = true; return; }
+
+  let all = [];
+  try{ all = await listMatches(); }catch(err){ section.hidden = true; return; }
+
+  const eligible = all.filter(m =>
+    m.prediction_enabled && m.status !== "completed" &&
+    m.team_a_id !== profile.team_id && m.team_b_id !== profile.team_id
+  );
+
+  if(!eligible.length){ section.hidden = true; return; }
+  section.hidden = false;
+
+  const predictionsByMatch = {};
+  await Promise.all(eligible.map(async m => {
+    const preds = await listPredictionsForMatch(m.id);
+    predictionsByMatch[m.id] = preds.find(p => p.predicting_team_id === profile.team_id);
+  }));
+
+  document.getElementById("predictionsHubList").innerHTML = eligible.map(m => {
+    const mine = predictionsByMatch[m.id];
+    const pickedName = mine ? (mine.predicted_winner_team_id === m.team_a_id ? m.team_a.name : m.team_b.name) : null;
+    return `
+      <div class="predhub-card glass">
+        <div class="predhub-head">
+          <span class="predhub-week">الأسبوع ${m.week?.week_number ?? '?'} · ${m.team_a.name} vs ${m.team_b.name}</span>
+          <span class="predhub-reward">${m.prediction_reward} دراية</span>
+        </div>
+        ${mine ? `
+          <div style="font-size:12.5px;font-weight:700;color:var(--text2);">توقّعك: <b style="color:var(--gold-deep);">${pickedName}</b> ✓ (نهائي)</div>
+        ` : `
+          <div class="predhub-row">
+            <button class="predhub-btn" onclick="onHubPredict('${m.id}','${m.team_a_id}','${m.team_a.name.replace(/'/g,"\\'")}')">${m.team_a.name}</button>
+            <button class="predhub-btn" onclick="onHubPredict('${m.id}','${m.team_b_id}','${m.team_b.name.replace(/'/g,"\\'")}')">${m.team_b.name}</button>
+          </div>
+        `}
+      </div>
+    `;
+  }).join("");
+}
+
+async function onHubPredict(matchId, teamId, teamName){
+  if(!confirm(`متأكد تتوقع فوز ${teamName}؟ التوقع نهائي وما يتغيّر بعدها.`)) return;
+  try{
+    await submitPrediction(matchId, teamId);
+    showToast("تم تسجيل توقعك", "success");
+    await renderPredictionsHub();
+  }catch(err){ showToast(err.message, "error"); }
+}
+
 (async function init(){
   profile = await optionalAuth();
   renderHeader(profile, "standings");
-  await Promise.all([renderMatches(), renderTicker(), renderPhotos(), renderStandings()]);
+  await Promise.all([renderMatches(), renderTicker(), renderPhotos(), renderPredictionsHub(), renderStandings()]);
 
   sb
     .channel("home-live")
     .on("postgres_changes", { event: "*", schema: "public", table: "teams" }, renderStandings)
     .on("postgres_changes", { event: "*", schema: "public", table: "standings_snapshots" }, renderStandings)
-    .on("postgres_changes", { event: "*", schema: "public", table: "matches" }, renderMatches)
+    .on("postgres_changes", { event: "*", schema: "public", table: "matches" }, () => { renderMatches(); renderPredictionsHub(); })
     .on("postgres_changes", { event: "*", schema: "public", table: "league_announcements" }, renderTicker)
     .on("postgres_changes", { event: "*", schema: "public", table: "league_photos" }, renderPhotos)
+    .on("postgres_changes", { event: "*", schema: "public", table: "match_predictions" }, renderPredictionsHub)
     .subscribe();
 })();
 </script>

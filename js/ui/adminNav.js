@@ -15,8 +15,7 @@ function renderAdminNav(activePage){
   el.innerHTML = `
     <div class="brand">
       <span class="brand-logo">
-        <img class="logo-light" src="../assets/daraya-logo-light.png" alt="مجموعة دراية"/>
-        <img class="logo-dark" src="../assets/daraya-logo-dark.png" alt="مجموعة دراية"/>
+        <img src="../assets/daraya-logo-light.png" alt="مجموعة دراية"/>
       </span>
       <div><h1>لوحة الإدارة</h1><p>دوري دراية</p></div>
     </div>

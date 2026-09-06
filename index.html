@@ -7,6 +7,108 @@
 <link rel="stylesheet" href="assets/css/theme.css"/>
 <link rel="stylesheet" href="assets/css/components.css"/>
 <style>
+  /* ====== مشهد الإرسال الافتتاحي (ضربة الكرة) — يشتغل مرة وحدة قبل شاشة كشف الشعار ====== */
+  #spikeStage{
+    position:fixed;inset:0;z-index:10000;background:var(--bg);
+    display:flex;align-items:center;justify-content:center;overflow:hidden;
+    animation:stageOut .45s ease 1.62s forwards;
+  }
+  @keyframes stageOut{ to{ opacity:0;visibility:hidden;pointer-events:none; } }
+  .spike-frame{ position:relative;width:min(390px,100vw);height:100%;margin:0 auto;overflow:hidden; }
+
+  .court{
+    position:absolute;bottom:170px;left:40px;right:40px;height:2px;
+    background:linear-gradient(90deg,transparent,rgba(15,31,51,.16),transparent);
+    animation:sceneFade .3s ease 1.0s forwards;
+  }
+  @keyframes sceneFade{ to{ opacity:0; } }
+
+  .flash{
+    position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;
+    animation:flashPop .35s ease 1.02s forwards;
+  }
+  @keyframes flashPop{ 0%{opacity:0} 10%{opacity:.8} 100%{opacity:0} }
+
+  .scene{ position:relative;width:280px;height:460px;margin:0 auto;transform:translateY(24px);animation:shake .4s ease 1.02s; }
+  @keyframes shake{
+    0%,100%{ transform:translateY(24px) translateX(0); }
+    20%{ transform:translateY(24px) translateX(-6px) rotate(-1deg); }
+    40%{ transform:translateY(24px) translateX(5px) rotate(1deg); }
+    60%{ transform:translateY(24px) translateX(-3px); }
+    80%{ transform:translateY(24px) translateX(2px); }
+  }
+
+  .shadow{
+    position:absolute;bottom:66px;left:50px;width:120px;height:15px;transform-origin:center;
+    animation:shadowShrink .7s ease forwards, sceneFade .3s ease 1.0s forwards;
+  }
+  @keyframes shadowShrink{ 0%{opacity:.22;transform:scaleX(1)} 100%{opacity:.1;transform:scaleX(.55)} }
+
+  .player{
+    position:absolute;left:48px;bottom:70px;width:150px;height:275px;transform-origin:bottom center;
+    animation:jump .72s cubic-bezier(.4,0,.2,1) forwards, sceneFade .3s ease 1.0s forwards;
+  }
+  @keyframes jump{
+    0%{ transform:translateY(0) scaleY(.94); }
+    48%{ transform:translateY(0) scaleY(1.04); }
+    90%{ transform:translateY(-64px) scaleY(1); }
+    100%{ transform:translateY(-68px) scaleY(1); }
+  }
+  .player svg{ width:100%;height:100%;overflow:visible; }
+  .arm{ transform-box:fill-box;transform-origin:80% 30%;animation:swing .72s cubic-bezier(.3,0,.2,1) forwards; }
+  @keyframes swing{ 0%{transform:rotate(48deg)} 76%{transform:rotate(58deg)} 100%{transform:rotate(-34deg)} }
+
+  .ball-wrap{
+    position:absolute;width:26px;height:26px;left:191px;top:100px;
+    animation:ballApproach .72s cubic-bezier(.3,0,.15,1) forwards;
+  }
+  @keyframes ballApproach{ 0%{left:64px;top:26px;} 100%{left:191px;top:100px;} }
+  .ball{
+    width:100%;height:100%;border-radius:50%;background:#fdfdfb;
+    border:1.6px solid rgba(15,31,51,.5);position:relative;box-shadow:0 3px 8px rgba(15,31,51,.25);
+    animation:ballSpin .72s linear, ballGrow .78s cubic-bezier(.5,0,.85,0) .72s forwards;
+    transform-origin:center;
+  }
+  @keyframes ballSpin{ to{ transform:rotate(340deg) scale(1); } }
+  @keyframes ballGrow{
+    0%{ transform:scale(1);border-color:rgba(15,31,51,.5); }
+    22%{ transform:scale(2.4); }
+    100%{ transform:scale(34);border-color:transparent;box-shadow:none; }
+  }
+  .ball::before,.ball::after{ content:"";position:absolute;border-radius:50%; }
+  .ball::before{ inset:2px;border:1.4px solid transparent;border-color:transparent rgba(15,31,51,.4) transparent rgba(15,31,51,.4); }
+  .ball::after{ inset:6px 2px;border:1.4px solid transparent;border-color:rgba(15,31,51,.4) transparent rgba(15,31,51,.4) transparent; }
+
+  .trail{
+    position:absolute;width:220px;height:10px;left:184px;top:98px;
+    background:linear-gradient(90deg,transparent, var(--gold) 55%, transparent);
+    border-radius:6px;opacity:0;transform:rotate(52deg) scaleX(.2);transform-origin:right center;
+    animation:trailShow .4s ease .72s forwards;filter:blur(1px);
+  }
+  @keyframes trailShow{ 0%{opacity:0;transform:rotate(52deg) scaleX(.2)} 30%{opacity:.9;transform:rotate(52deg) scaleX(1)} 100%{opacity:0;transform:rotate(52deg) scaleX(1.5)} }
+
+  .burst{
+    position:absolute;left:191px;top:100px;width:10px;height:10px;transform:translate(-50%,-50%);
+    opacity:0;animation:burstPop .45s ease .72s forwards;
+  }
+  @keyframes burstPop{ 0%{opacity:0;transform:translate(-50%,-50%) scale(.2)} 30%{opacity:1;transform:translate(-50%,-50%) scale(1)} 100%{opacity:0;transform:translate(-50%,-50%) scale(1.8)} }
+
+  .pow{
+    position:absolute;left:214px;top:52px;font-family:'Tajawal',sans-serif;font-weight:900;
+    font-size:26px;color:var(--gold);-webkit-text-stroke:1.3px var(--accent2);white-space:nowrap;
+    opacity:0;animation:powPop .5s cubic-bezier(.34,1.56,.64,1) .84s forwards;
+  }
+  @keyframes powPop{
+    0%{ opacity:0;transform:scale(.2) rotate(-8deg); }
+    40%{ opacity:1;transform:scale(1.15) rotate(4deg); }
+    60%{ transform:scale(.95) rotate(-2deg); }
+    85%{ opacity:1;transform:scale(1) rotate(0); }
+    100%{ opacity:0;transform:scale(.94) rotate(0) translateY(-8px); }
+  }
+  @media (prefers-reduced-motion:reduce){
+    #spikeStage{ display:none; }
+  }
+
   /* ====== شاشة الدخول (كشف شعار مجموعة درايه تسلسليًا) ====== */
   #splash{
     position:fixed;inset:0;z-index:9999;
@@ -84,12 +186,44 @@
   #landingWrap.reveal .entry-grid .entry-btn:nth-child(1){ animation-delay:.2s; }
   #landingWrap.reveal .entry-grid .entry-btn:nth-child(2){ animation-delay:.3s; }
   #landingWrap.reveal .entry-grid .entry-btn:nth-child(3){ animation-delay:.4s; }
+  #landingWrap.reveal .entry-grid .entry-btn:nth-child(4){ animation-delay:.5s; }
   @media (prefers-reduced-motion:reduce){
     .landing-wrap h1, .landing-wrap p, .entry-grid .entry-btn{ animation:none !important; opacity:1 !important; }
   }
 </style>
 </head>
 <body>
+
+<div id="spikeStage">
+  <div class="spike-frame">
+    <div class="court"></div>
+    <div class="scene">
+      <svg class="shadow" viewBox="0 0 120 14"><ellipse cx="60" cy="7" rx="60" ry="7" fill="#0f1f33"/></svg>
+      <div class="player">
+        <svg viewBox="0 0 120 220">
+          <circle cx="66" cy="26" r="15" fill="#1a3a5c"/>
+          <path fill="#1a3a5c" d="M50,42 Q66,50 82,42 L88,96 Q66,108 44,96 Z"/>
+          <path fill="#1a3a5c" d="M44,94 Q22,124 30,172 L50,172 Q46,130 60,100 Z"/>
+          <path fill="#1a3a5c" d="M82,94 Q102,134 92,184 L72,184 Q78,134 68,100 Z"/>
+          <path fill="#0f2540" d="M46,42 Q30,50 24,72 L36,78 Q42,58 54,48 Z"/>
+          <g class="arm">
+            <path fill="#1a3a5c" d="M82,44 Q100,46 108,28 L98,16 Q90,32 76,40 Z"/>
+            <circle cx="106" cy="20" r="10" fill="#1a3a5c"/>
+          </g>
+        </svg>
+      </div>
+      <div class="ball-wrap"><div class="ball"></div></div>
+      <div class="trail"></div>
+      <div class="burst">
+        <svg viewBox="0 0 90 90" fill="none" stroke="#b8952a" stroke-width="4" stroke-linecap="round">
+          <path d="M45 4v18M45 68v18M4 45h18M68 45h18M14 14l13 13M79 14l-13 13M14 76l13-13M79 76l-13-13"/>
+        </svg>
+      </div>
+      <div class="pow">اضرب!</div>
+    </div>
+    <div class="flash"></div>
+  </div>
+</div>
 
 <div id="splash">
   <div>
@@ -139,6 +273,10 @@
     <a href="login.html?as=admin" class="entry-btn glass">
       <span class="icon">👑</span>
       <div><div class="label">دخول الإدارة</div><div class="sub">لوحة التحكم الكاملة بالدوري</div></div>
+    </a>
+    <a href="scoreboard.html" class="entry-btn glass">
+      <span class="icon">🔢</span>
+      <div><div class="label">عدّاد النقاط</div><div class="sub">لتسجيل نقاط المباراة لحظيًا أثناء اللعب</div></div>
     </a>
   </div>
 </div>

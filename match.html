@@ -29,12 +29,26 @@
   .st-rejected{ background:var(--red-bg);color:var(--red); }
   .event-item{ font-size:12px;padding:8px 0;border-bottom:1px solid var(--glass-border); }
   .event-item:last-child{ border-bottom:none; }
+  .predict-card{ padding:14px;margin-bottom:14px; }
+  .predict-head{ font-size:13px;font-weight:800;margin-bottom:4px; }
+  .predict-sub{ font-size:11px;color:var(--text2);margin-bottom:12px; }
+  .predict-row{ display:flex;gap:8px; }
+  .predict-btn{
+    flex:1;padding:10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface2);
+    color:var(--text);font-weight:700;font-size:13px;cursor:pointer;
+  }
+  .predict-btn.picked{ background:var(--gold);color:#2a2103;border-color:var(--gold); }
+  .predict-result{ font-size:12px;font-weight:700;margin-top:8px; }
+  .predict-result.win{ color:var(--green); }
+  .predict-result.lose{ color:var(--text2); }
 </style>
 </head>
 <body>
 <header id="appHeader"></header>
 <main class="container">
   <div id="matchHero" class="card glass match-hero"></div>
+
+  <div id="predictionWrap"></div>
 
   <div class="section-title">التشكيلات</div>
   <div class="lineup-grid" id="lineupGrid"></div>
@@ -258,9 +272,66 @@ async function loadAll(){
   renderHero();
   await renderLineups(loans);
   renderLoans(loans);
+  await renderPrediction();
   renderClaimForm();
   await renderClaims();
   await renderEvents();
+}
+
+// كباتن الفرق غير المشاركة بهذي المباراة يقدرون يتوقعون الفائز — لو التوقع مفتوح من الإدارة
+async function renderPrediction(){
+  const wrap = document.getElementById("predictionWrap");
+  const isOutsideCaptain = profile && profile.team_id
+    && profile.team_id !== match.team_a_id && profile.team_id !== match.team_b_id;
+
+  // ما فيه داعي نجيب التوقعات إطلاقًا إذا هذي المباراة ما فُتح فيها توقع من الأساس
+  if(!match.prediction_enabled && !match.prediction_reward){ wrap.innerHTML = ""; return; }
+  if(match.status !== "completed" && !isOutsideCaptain){ wrap.innerHTML = ""; return; }
+
+  let predictions = [];
+  try{ predictions = await listPredictionsForMatch(matchId); }
+  catch(err){ wrap.innerHTML = ""; return; }
+  const myPrediction = isOutsideCaptain ? predictions.find(p => p.predicting_team_id === profile.team_id) : null;
+
+  if(match.status === "completed"){
+    if(!predictions.length) { wrap.innerHTML = ""; return; }
+    wrap.innerHTML = `
+      <div class="card glass predict-card">
+        <div class="predict-head">توقعات هذه المباراة</div>
+        ${predictions.map(p => {
+          const correct = p.predicted_winner_team_id === match.winner_team_id;
+          return `<div class="predict-result ${correct ? 'win' : 'lose'}">${p.team.name}: ${correct ? `توقّع صح ✓ (+${match.prediction_reward} د)` : 'توقّع غلط'}</div>`;
+        }).join("")}
+      </div>
+    `;
+    return;
+  }
+
+  wrap.innerHTML = myPrediction ? `
+    <div class="card glass predict-card">
+      <div class="predict-head">🎯 توقّعك مسجَّل — نهائي</div>
+      <div class="predict-sub">توقّعت فوز <b>${myPrediction.predicted_winner_team_id === match.team_a_id ? match.team_a.name : match.team_b.name}</b> — الجائزة ${match.prediction_reward} دراية لو صحّ.</div>
+    </div>
+  ` : `
+    <div class="card glass predict-card">
+      <div class="predict-head">🎯 توقّع الفائز — الجائزة ${match.prediction_reward} دراية</div>
+      <div class="predict-sub">لفرق غير المشاركة بالمباراة فقط. توقّع نهائي ما يتغيّر بعد التسجيل. توقّع صح = تربح المبلغ لفريقك. توقّع غلط = ما يصير شي.</div>
+      <div class="predict-row">
+        <button class="predict-btn" onclick="onPredict('${match.team_a_id}')">${match.team_a.name}</button>
+        <button class="predict-btn" onclick="onPredict('${match.team_b_id}')">${match.team_b.name}</button>
+      </div>
+    </div>
+  `;
+}
+
+async function onPredict(teamId){
+  const teamName = teamId === match.team_a_id ? match.team_a.name : match.team_b.name;
+  if(!confirm(`متأكد تتوقع فوز ${teamName}؟ التوقع نهائي وما يتغيّر بعدها.`)) return;
+  try{
+    await submitPrediction(matchId, teamId);
+    showToast("تم تسجيل توقعك", "success");
+    await renderPrediction();
+  }catch(err){ showToast(err.message, "error"); }
 }
 
 (async function(){
@@ -275,6 +346,7 @@ async function loadAll(){
     .on("postgres_changes", { event: "*", schema: "public", table: "loan_claims", filter: `match_id=eq.${matchId}` }, renderClaims)
     .on("postgres_changes", { event: "*", schema: "public", table: "match_events", filter: `match_id=eq.${matchId}` }, renderEvents)
     .on("postgres_changes", { event: "*", schema: "public", table: "match_lineups", filter: `match_id=eq.${matchId}` }, loadAll)
+    .on("postgres_changes", { event: "*", schema: "public", table: "match_predictions", filter: `match_id=eq.${matchId}` }, renderPrediction)
     .subscribe();
 })();
 </script>

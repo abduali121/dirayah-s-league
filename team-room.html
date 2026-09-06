@@ -16,6 +16,9 @@
   .ledger-row{ display:flex;justify-content:space-between;align-items:center;padding:9px 14px;margin-bottom:6px;font-size:12px; }
   .ledger-row .delta.pos{ color:var(--green);font-weight:800; }
   .ledger-row .delta.neg{ color:var(--red);font-weight:800; }
+  .player-check{ display:flex;align-items:center;gap:6px;font-size:12px;padding:6px 0; }
+  .loan-tag{ font-size:10px;background:var(--blue-bg);color:var(--blue);padding:2px 6px;border-radius:6px;margin-inline-start:4px; }
+  .lineup-wrap{ padding:14px; }
 </style>
 </head>
 <body>
@@ -24,6 +27,11 @@
   <div id="teamHero" class="card glass team-hero"></div>
 
   <div id="upcomingMatchWrap"></div>
+
+  <div id="lineupSection" hidden>
+    <div class="section-title">تشكيلة مباراتك القادمة</div>
+    <div id="lineupWrap" class="card glass lineup-wrap"></div>
+  </div>
 
   <div class="section-title">القائمة الأصلية</div>
   <div id="rosterList"></div>
@@ -41,12 +49,16 @@
 <script src="js/api/teams.js"></script>
 <script src="js/api/players.js"></script>
 <script src="js/api/ledger.js"></script>
+<script src="js/api/matches.js"></script>
+<script src="js/api/loans.js"></script>
 <script>
 const teamId = new URLSearchParams(window.location.search).get("id");
 const REASON_LABELS = {
   match_result: "نتيجة مباراة", loan_fee: "رسم إعارة",
-  admin_adjustment: "تعديل إداري", admin_reversal: "عكس/تصحيح", season_init: "بداية الموسم",
+  admin_adjustment: "تعديل إداري", admin_reversal: "عكس/تصحيح", season_init: "بداية الموسم", prediction_reward: "جائزة توقّع",
 };
+let profile = null;
+let playersById = {};
 
 async function renderTeamRoom(){
   const { data: team, error } = await sb.from("teams").select("*").eq("id", teamId).single();
@@ -62,6 +74,7 @@ async function renderTeamRoom(){
   `;
 
   const players = await listPlayers();
+  playersById = Object.fromEntries(players.map(p => [p.id, p]));
   const roster = players.filter(p => p.original_team_id === teamId);
   document.getElementById("rosterList").innerHTML = roster.map(p => `
     <div class="roster-item glass"><span>${p.full_name}</span><span style="color:var(--text2);font-size:11px;">${p.position || ''}</span></div>
@@ -77,6 +90,7 @@ async function renderTeamRoom(){
     .limit(1);
 
   const wrap = document.getElementById("upcomingMatchWrap");
+  const lineupSection = document.getElementById("lineupSection");
   if(upcoming && upcoming.length){
     const m = upcoming[0];
     wrap.innerHTML = `
@@ -88,8 +102,15 @@ async function renderTeamRoom(){
         <span class="btn primary" style="font-size:12px;">سجّل صفقة إعارة ←</span>
       </a>
     `;
+    if(profile && (profile.role === "super_admin" || profile.team_id === teamId)){
+      lineupSection.hidden = false;
+      await renderLineup(m.id);
+    }else{
+      lineupSection.hidden = true;
+    }
   }else{
     wrap.innerHTML = "";
+    lineupSection.hidden = true;
   }
 
   const ledger = await listLedger(teamId);
@@ -101,8 +122,60 @@ async function renderTeamRoom(){
   `).join("") || `<div class="empty-state">لا توجد حركات بعد</div>`;
 }
 
+// المؤهّلون لتمثيل الفريق بهذي المباراة: لاعبوه الأصليون النشطون + أي لاعب مُعار له لهذي المباراة تحديدًا
+function eligiblePlayersForTeam(loans){
+  const own = Object.values(playersById).filter(p => p.original_team_id === teamId && p.is_active);
+  const loanedIn = loans.filter(l => l.borrowing_team_id === teamId).map(l => playersById[l.player_id]).filter(Boolean);
+  return [...own, ...loanedIn];
+}
+
+async function renderLineup(matchId){
+  const wrap = document.getElementById("lineupWrap");
+  const [{ data: rows }, loans] = await Promise.all([
+    sb.from("match_lineups").select("*, players:player_id(full_name)").eq("match_id", matchId).eq("team_id", teamId),
+    listLoansForMatch(matchId),
+  ]);
+
+  const currentIds = new Set((rows || []).map(r => r.player_id));
+  const listHtml = (rows || []).map(r => {
+    const isLoan = loans.some(l => l.player_id === r.player_id && l.borrowing_team_id === teamId);
+    return `<div class="player-check">${r.players.full_name}${isLoan ? '<span class="loan-tag">مُعار</span>' : ''}</div>`;
+  }).join("") || '<div class="empty-state" style="padding:10px;">لم تُحدَّد التشكيلة بعد</div>';
+
+  wrap.dataset.matchId = matchId;
+  wrap.innerHTML = `
+    ${listHtml}
+    <button class="btn" style="font-size:12px;width:100%;margin-top:10px;" onclick="toggleLineupEdit()">تعديل التشكيلة</button>
+    <div id="lineupEditBox" style="display:none;margin-top:10px;">
+      ${eligiblePlayersForTeam(loans).map(p => `
+        <label class="player-check" style="cursor:pointer;">
+          <input type="checkbox" value="${p.id}" ${currentIds.has(p.id) ? "checked" : ""}/>
+          ${p.full_name}${p.original_team_id !== teamId ? '<span class="loan-tag">مُعار</span>' : ''}
+        </label>
+      `).join("") || '<div class="empty-state" style="padding:10px;">لا يوجد لاعبون مؤهّلون</div>'}
+      <button class="btn primary block" style="margin-top:8px;font-size:12px;" onclick="onSaveLineup()">حفظ التشكيلة</button>
+    </div>
+  `;
+}
+
+function toggleLineupEdit(){
+  const el = document.getElementById("lineupEditBox");
+  el.style.display = el.style.display === "none" ? "block" : "none";
+}
+
+async function onSaveLineup(){
+  const wrap = document.getElementById("lineupWrap");
+  const matchId = wrap.dataset.matchId;
+  const ids = [...document.getElementById("lineupEditBox").querySelectorAll('input[type="checkbox"]:checked')].map(cb => cb.value);
+  try{
+    await setLineup(matchId, teamId, ids);
+    showToast("تم حفظ التشكيلة", "success");
+    await renderLineup(matchId);
+  }catch(err){ showToast(err.message, "error"); }
+}
+
 (async function(){
-  const profile = await optionalAuth();
+  profile = await optionalAuth();
   if(!teamId){ document.querySelector("main").innerHTML = `<div class="empty-state">لم يتم تحديد فريق</div>`; return; }
   renderHeader(profile, "team-room");
   await renderTeamRoom();

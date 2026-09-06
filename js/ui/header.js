@@ -1,4 +1,4 @@
-// يبني رأس الصفحة المشترك (الشعار + التنقل حسب الدور) داخل عنصر #appHeader
+// يبني رأس الصفحة المشترك (الشعار فقط) + بار تنقل سفلي ثابت شبيه بتطبيقات الجوال
 // تسجيل الدخول متاح فقط من الصفحة الرئيسية index.html، لذا لا يظهر هنا أي زر دخول
 function renderHeader(profile, activePage){
   const el = document.getElementById("appHeader");
@@ -6,35 +6,44 @@ function renderHeader(profile, activePage){
 
   const inAdmin = window.location.pathname.includes("/admin/");
   const rootPrefix = inAdmin ? "../" : "";
-
-  const navLinks = [
-    { href: `${rootPrefix}index.html`, label: "→ الرئيسية", key: "home" },
-    { href: `${rootPrefix}standings.html`, label: "الترتيب", key: "standings" },
-  ];
-  if(profile && profile.team_id){
-    navLinks.push({ href: `${rootPrefix}team-room.html?id=${profile.team_id}`, label: "غرفتي", key: "team-room" });
-  }
-  if(profile && profile.role === "super_admin"){
-    navLinks.push({ href: `${rootPrefix}admin/index.html`, label: "الإدارة", key: "admin" });
-  }
-
   const assetsPrefix = inAdmin ? "../assets/" : "assets/";
+
   el.innerHTML = `
     <div class="brand">
       <span class="brand-logo">
-        <img class="logo-light" src="${assetsPrefix}daraya-logo-light.png" alt="مجموعة دراية"/>
-        <img class="logo-dark" src="${assetsPrefix}daraya-logo-dark.png" alt="مجموعة دراية"/>
+        <img src="${assetsPrefix}daraya-logo-light.png" alt="مجموعة دراية"/>
       </span>
       <div>
         <h1>دوري دراية</h1>
         <p>${profile ? profile.display_name : ""}</p>
       </div>
     </div>
-    <div style="display:flex;align-items:center;gap:8px;">
-      <nav style="display:flex;gap:10px;">
-        ${navLinks.map(l => `<a href="${l.href}" style="font-size:13px;font-weight:700;${l.key===activePage?'color:var(--gold);':'color:var(--text2);'}">${l.label}</a>`).join("")}
-      </nav>
-      ${profile ? `<button class="btn" style="padding:8px 12px;font-size:12px;" onclick="signOut()">خروج</button>` : ``}
-    </div>
+    ${profile ? `<button class="btn" style="padding:8px 12px;font-size:12px;" onclick="signOut()">خروج</button>` : ``}
   `;
+
+  const tabs = [
+    { href: `${rootPrefix}standings.html`, label: "الرئيسية", icon: "🏠", key: "standings" },
+    { href: `${rootPrefix}scoreboard.html`, label: "عدّاد النقاط", icon: "🔢", key: "scoreboard" },
+  ];
+  if(profile && profile.team_id){
+    tabs.push({ href: `${rootPrefix}team-room.html?id=${profile.team_id}`, label: "غرفتي", icon: "🎽", key: "team-room" });
+  }
+  if(profile && profile.role === "super_admin"){
+    tabs.push({ href: `${rootPrefix}admin/index.html`, label: "الإدارة", icon: "👑", key: "admin" });
+  }
+
+  let bar = document.getElementById("bottomTabBar");
+  if(!bar){
+    bar = document.createElement("nav");
+    bar.id = "bottomTabBar";
+    bar.className = "bottom-tabbar";
+    document.body.appendChild(bar);
+    document.body.classList.add("has-tabbar");
+  }
+  bar.innerHTML = tabs.map(t => `
+    <a href="${t.href}" class="tab-item ${t.key === activePage ? 'active' : ''}">
+      <span class="tab-icon">${t.icon}</span>
+      <span class="tab-label">${t.label}</span>
+    </a>
+  `).join("");
 }

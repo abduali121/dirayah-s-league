@@ -63,6 +63,33 @@ async function addMatchEvent(matchId, description, eventType = "note", minute = 
   return data;
 }
 
+async function setMatchPrediction(matchId, reward){
+  const { data, error } = await sb.rpc("set_match_prediction", { p_match_id: matchId, p_reward: reward });
+  if(error) throw error;
+  return data;
+}
+
+async function closePrediction(matchId){
+  const { data, error } = await sb.rpc("close_prediction", { p_match_id: matchId });
+  if(error) throw error;
+  return data;
+}
+
+async function submitPrediction(matchId, predictedTeamId){
+  const { data, error } = await sb.rpc("submit_prediction", { p_match_id: matchId, p_predicted_team_id: predictedTeamId });
+  if(error) throw error;
+  return data;
+}
+
+async function listPredictionsForMatch(matchId){
+  const { data, error } = await sb
+    .from("match_predictions")
+    .select("*, team:predicting_team_id(name)")
+    .eq("match_id", matchId);
+  if(error) throw error;
+  return data;
+}
+
 async function setLineup(matchId, teamId, playerIds){
   const { data, error } = await sb.rpc("set_lineup", {
     p_match_id: matchId, p_team_id: teamId, p_player_ids: playerIds,

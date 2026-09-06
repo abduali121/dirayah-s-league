@@ -105,6 +105,19 @@ function matchCard(m){
         </div>
         <button class="btn primary block" type="submit" style="font-size:13px;">حفظ التعديل</button>
       </form>
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);">
+        ${m.prediction_enabled ? `
+          <div style="display:flex;align-items:center;justify-content:space-between;font-size:12px;">
+            <span>🎯 التوقع مفتوح — الجائزة ${m.prediction_reward} دراية</span>
+            <button class="btn" style="font-size:11px;padding:5px 9px;" onclick="onClosePrediction('${m.id}')">إغلاق التوقع</button>
+          </div>
+        ` : `
+          <div style="display:flex;gap:8px;">
+            <input class="field" type="number" id="pred-${m.id}" placeholder="مبلغ جائزة التوقع" min="1" style="flex:1;font-size:12px;padding:8px 10px;"/>
+            <button class="btn" style="font-size:11px;padding:8px 12px;" onclick="onOpenPrediction('${m.id}')">فتح توقع</button>
+          </div>
+        `}
+      </div>
     </div>
   `;
 }
@@ -157,6 +170,24 @@ async function onEditMatch(e, m){
       team_b_stake: parseInt(document.getElementById(`esb-${m.id}`).value, 10),
     });
     showToast("تم حفظ تعديل المباراة", "success");
+    await reload();
+  }catch(err){ showToast(err.message, "error"); }
+}
+
+async function onOpenPrediction(matchId){
+  const reward = parseInt(document.getElementById(`pred-${matchId}`).value, 10);
+  if(!reward || reward <= 0){ showToast("حط مبلغ جائزة صحيح", "error"); return; }
+  try{
+    await setMatchPrediction(matchId, reward);
+    showToast("تم فتح التوقع", "success");
+    await reload();
+  }catch(err){ showToast(err.message, "error"); }
+}
+
+async function onClosePrediction(matchId){
+  try{
+    await closePrediction(matchId);
+    showToast("تم إغلاق التوقع", "success");
     await reload();
   }catch(err){ showToast(err.message, "error"); }
 }

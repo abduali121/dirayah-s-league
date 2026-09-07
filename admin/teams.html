@@ -74,10 +74,22 @@ function renderTeams(){
           <button class="btn" onclick="toggleEdit('${t.id}')">إلغاء</button>
         </div>
         ${activated ? `<button class="btn" style="width:100%;margin-top:8px;color:var(--red);" onclick="onDeleteCode('${t.id}','${t.name}')">حذف رمز الكابتن (نسيه؟)</button>` : ''}
+        <button class="btn" style="width:100%;margin-top:8px;color:var(--red);" onclick="onDeleteTeam('${t.id}','${t.name}')">حذف الفريق نهائيًا</button>
       </div>
     </div>
   `;
   }).join("") || `<div class="empty-state">لا توجد فرق بعد. أضف الفرق الستة أعلاه.</div>`;
+}
+
+async function onDeleteTeam(teamId, teamName){
+  if(!confirm(`حذف فريق "${teamName}" نهائيًا؟ هذا ما فيه تراجع.`)) return;
+  try{
+    await deleteTeam(teamId);
+    showToast("تم حذف الفريق", "success");
+    teamsCache = await listTeams();
+    activatedTeamIds = await listActivatedTeamIds();
+    renderTeams();
+  }catch(err){ showToast(err.message, "error"); }
 }
 
 async function onDeleteCode(teamId, teamName){

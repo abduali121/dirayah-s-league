@@ -45,3 +45,9 @@ async function updateTeam(teamId, { name, logo_url, primary_color, captain_phone
   if(error) throw error;
   return data;
 }
+
+async function deleteTeam(teamId){
+  const { data, error } = await sb.rpc("delete_team", { p_team_id: teamId });
+  if(error) throw error;
+  return data;
+}

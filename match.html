@@ -176,7 +176,11 @@ function renderClaimForm(){
   const canClaim = profile && profile.team_id && (profile.team_id === match.team_a_id || profile.team_id === match.team_b_id);
   if(!canClaim){ wrap.innerHTML = ""; return; }
 
-  const eligiblePlayers = Object.values(playersById).filter(p => p.original_team_id !== profile.team_id);
+  // الإعارة تكون فقط من فرق ثالثة غير مشاركة بهذي المباراة — لا فريقك ولا خصمك بها
+  const opponentTeamId = profile.team_id === match.team_a_id ? match.team_b_id : match.team_a_id;
+  const eligiblePlayers = Object.values(playersById).filter(p =>
+    p.original_team_id !== profile.team_id && p.original_team_id !== opponentTeamId
+  );
   wrap.innerHTML = `
     <div class="card glass">
       <h4 style="font-size:13px;margin-bottom:10px;">سجّل صفقة (بعد الاتفاق مع اللاعب خارج التطبيق)</h4>

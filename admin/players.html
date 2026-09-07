@@ -42,18 +42,6 @@
     </form>
   </div>
 
-  <div class="card glass">
-    <button type="button" class="btn block" style="justify-content:space-between;display:flex;" onclick="toggleTransferForm()">
-      <span>نقل لاعب بين الفرق</span><span id="transferToggleIcon">＋</span>
-    </button>
-    <form id="transferForm" style="display:none;margin-top:12px;">
-      <div style="margin-bottom:10px;"><label class="field-label">من فريق</label><select class="field" id="t_from_team" required></select></div>
-      <div style="margin-bottom:10px;"><label class="field-label">اللاعب</label><select class="field" id="t_player" required></select></div>
-      <div style="margin-bottom:10px;"><label class="field-label">إلى فريق</label><select class="field" id="t_to_team" required></select></div>
-      <button class="btn primary block" type="submit">نقل اللاعب</button>
-    </form>
-  </div>
-
   <div id="playersList"></div>
 </main>
 
@@ -96,10 +84,20 @@ function renderPlayers(){
           <label style="display:flex;align-items:center;gap:6px;font-size:13px;margin-bottom:10px;">
             <input type="checkbox" id="e_active-${p.id}" ${p.is_active ? 'checked' : ''}/> نشط (مؤهّل للتشكيلة والإعارة)
           </label>
-          <div style="display:flex;gap:8px;">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
             <button class="btn primary" style="flex:1;" onclick="onSavePlayer('${p.id}')">حفظ</button>
             <button class="btn" onclick="toggleEdit('${p.id}')">إلغاء</button>
+            <button class="btn" onclick="toggleTransferMini('${p.id}')">نقل</button>
             <button class="btn" style="color:var(--red);" onclick="onDeletePlayer('${p.id}', '${p.full_name.replace(/'/g, "\\'")}')">حذف نهائيًا</button>
+          </div>
+          <div class="transfer-mini" id="xfer-${p.id}" style="display:none;margin-top:10px;">
+            <label class="field-label">انقل اللاعب إلى فريق</label>
+            <div style="display:flex;gap:8px;">
+              <select class="field" id="xfer-team-${p.id}" style="flex:1;">
+                ${teamsCache.filter(team => team.id !== p.original_team_id).map(team => `<option value="${team.id}">${team.name}</option>`).join("")}
+              </select>
+              <button class="btn primary" onclick="onTransferPlayer('${p.id}', '${p.full_name.replace(/'/g, "\\'")}')">تأكيد</button>
+            </div>
           </div>
         </div>
       </div>
@@ -134,43 +132,24 @@ async function onDeletePlayer(playerId, playerName){
     showToast("تم حذف اللاعب", "success");
     playersCache = await listPlayers();
     renderPlayers();
-    fillTransferSelects();
   }catch(err){ showToast(err.message, "error"); }
 }
 
-function fillTransferSelects(){
-  const fromSelect = document.getElementById("t_from_team");
-  fromSelect.innerHTML = teamsCache.map(t => `<option value="${t.id}">${t.name}</option>`).join("");
-  onTransferFromTeamChange();
+function toggleTransferMini(playerId){
+  const el = document.getElementById(`xfer-${playerId}`);
+  el.style.display = el.style.display === "none" ? "block" : "none";
 }
 
-function onTransferFromTeamChange(){
-  const fromTeamId = document.getElementById("t_from_team").value;
-  const toSelect = document.getElementById("t_to_team");
-  const prevToValue = toSelect.value;
-  toSelect.innerHTML = teamsCache
-    .filter(t => t.id !== fromTeamId)
-    .map(t => `<option value="${t.id}">${t.name}</option>`).join("");
-  if([...toSelect.options].some(o => o.value === prevToValue)){
-    toSelect.value = prevToValue;
-  }
-  fillTransferPlayers();
-}
-
-function fillTransferPlayers(){
-  const fromTeamId = document.getElementById("t_from_team").value;
-  const playerSelect = document.getElementById("t_player");
-  const options = playersCache.filter(p => p.original_team_id === fromTeamId);
-  playerSelect.innerHTML = options.length
-    ? options.map(p => `<option value="${p.id}">${p.full_name}</option>`).join("")
-    : `<option value="">— لا يوجد لاعبون بهذا الفريق —</option>`;
-}
-
-function toggleTransferForm(){
-  const form = document.getElementById("transferForm");
-  const isOpen = form.style.display !== "none";
-  form.style.display = isOpen ? "none" : "block";
-  document.getElementById("transferToggleIcon").textContent = isOpen ? "＋" : "－";
+async function onTransferPlayer(playerId, playerName){
+  const toTeamId = document.getElementById(`xfer-team-${playerId}`).value;
+  const toTeamName = teamsCache.find(t => t.id === toTeamId)?.name || "";
+  if(!confirm(`نقل "${playerName}" إلى فريق "${toTeamName}"؟`)) return;
+  try{
+    await transferPlayer(playerId, toTeamId);
+    showToast("تم نقل اللاعب", "success");
+    playersCache = await listPlayers();
+    renderPlayers();
+  }catch(err){ showToast(err.message, "error"); }
 }
 
 (async function(){
@@ -188,7 +167,6 @@ function toggleTransferForm(){
   document.getElementById("p_position").innerHTML = positionOptions();
   playersCache = await listPlayers();
   renderPlayers();
-  fillTransferSelects();
 
   document.getElementById("playerForm").addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -202,23 +180,6 @@ function toggleTransferForm(){
       e.target.reset();
       playersCache = await listPlayers();
       renderPlayers();
-      fillTransferSelects();
-    }catch(err){ showToast(err.message, "error"); }
-  });
-
-  document.getElementById("t_from_team").addEventListener("change", onTransferFromTeamChange);
-
-  document.getElementById("transferForm").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const playerId = document.getElementById("t_player").value;
-    const toTeamId = document.getElementById("t_to_team").value;
-    if(!playerId){ showToast("اختر لاعبًا أولًا", "error"); return; }
-    try{
-      await transferPlayer(playerId, toTeamId);
-      showToast("تم نقل اللاعب", "success");
-      playersCache = await listPlayers();
-      renderPlayers();
-      fillTransferSelects();
     }catch(err){ showToast(err.message, "error"); }
   });
 })();

@@ -43,8 +43,10 @@
   </div>
 
   <div class="card glass">
-    <h3 style="font-size:14px;margin-bottom:10px;">نقل لاعب بين الفرق</h3>
-    <form id="transferForm">
+    <button type="button" class="btn block" style="justify-content:space-between;display:flex;" onclick="toggleTransferForm()">
+      <span>نقل لاعب بين الفرق</span><span id="transferToggleIcon">＋</span>
+    </button>
+    <form id="transferForm" style="display:none;margin-top:12px;">
       <div style="margin-bottom:10px;"><label class="field-label">من فريق</label><select class="field" id="t_from_team" required></select></div>
       <div style="margin-bottom:10px;"><label class="field-label">اللاعب</label><select class="field" id="t_player" required></select></div>
       <div style="margin-bottom:10px;"><label class="field-label">إلى فريق</label><select class="field" id="t_to_team" required></select></div>
@@ -138,10 +140,20 @@ async function onDeletePlayer(playerId, playerName){
 
 function fillTransferSelects(){
   const fromSelect = document.getElementById("t_from_team");
+  fromSelect.innerHTML = teamsCache.map(t => `<option value="${t.id}">${t.name}</option>`).join("");
+  onTransferFromTeamChange();
+}
+
+function onTransferFromTeamChange(){
+  const fromTeamId = document.getElementById("t_from_team").value;
   const toSelect = document.getElementById("t_to_team");
-  const teamOptions = teamsCache.map(t => `<option value="${t.id}">${t.name}</option>`).join("");
-  fromSelect.innerHTML = teamOptions;
-  toSelect.innerHTML = teamOptions;
+  const prevToValue = toSelect.value;
+  toSelect.innerHTML = teamsCache
+    .filter(t => t.id !== fromTeamId)
+    .map(t => `<option value="${t.id}">${t.name}</option>`).join("");
+  if([...toSelect.options].some(o => o.value === prevToValue)){
+    toSelect.value = prevToValue;
+  }
   fillTransferPlayers();
 }
 
@@ -152,6 +164,13 @@ function fillTransferPlayers(){
   playerSelect.innerHTML = options.length
     ? options.map(p => `<option value="${p.id}">${p.full_name}</option>`).join("")
     : `<option value="">— لا يوجد لاعبون بهذا الفريق —</option>`;
+}
+
+function toggleTransferForm(){
+  const form = document.getElementById("transferForm");
+  const isOpen = form.style.display !== "none";
+  form.style.display = isOpen ? "none" : "block";
+  document.getElementById("transferToggleIcon").textContent = isOpen ? "＋" : "－";
 }
 
 (async function(){
@@ -187,17 +206,13 @@ function fillTransferPlayers(){
     }catch(err){ showToast(err.message, "error"); }
   });
 
-  document.getElementById("t_from_team").addEventListener("change", fillTransferPlayers);
+  document.getElementById("t_from_team").addEventListener("change", onTransferFromTeamChange);
 
   document.getElementById("transferForm").addEventListener("submit", async (e) => {
     e.preventDefault();
     const playerId = document.getElementById("t_player").value;
     const toTeamId = document.getElementById("t_to_team").value;
     if(!playerId){ showToast("اختر لاعبًا أولًا", "error"); return; }
-    if(document.getElementById("t_from_team").value === toTeamId){
-      showToast("فريق الوجهة لازم يختلف عن فريق المصدر", "error");
-      return;
-    }
     try{
       await transferPlayer(playerId, toTeamId);
       showToast("تم نقل اللاعب", "success");

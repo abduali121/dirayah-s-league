@@ -49,6 +49,12 @@ async function confirmMatchResult(matchId, winnerTeamId){
   return data;
 }
 
+async function deleteMatch(matchId){
+  const { data, error } = await sb.rpc("delete_match", { p_match_id: matchId });
+  if(error) throw error;
+  return data;
+}
+
 async function undoMatchResult(matchId){
   const { data, error } = await sb.rpc("undo_match_result", { p_match_id: matchId });
   if(error) throw error;

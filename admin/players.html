@@ -42,6 +42,16 @@
     </form>
   </div>
 
+  <div class="card glass">
+    <h3 style="font-size:14px;margin-bottom:10px;">نقل لاعب بين الفرق</h3>
+    <form id="transferForm">
+      <div style="margin-bottom:10px;"><label class="field-label">من فريق</label><select class="field" id="t_from_team" required></select></div>
+      <div style="margin-bottom:10px;"><label class="field-label">اللاعب</label><select class="field" id="t_player" required></select></div>
+      <div style="margin-bottom:10px;"><label class="field-label">إلى فريق</label><select class="field" id="t_to_team" required></select></div>
+      <button class="btn primary block" type="submit">نقل اللاعب</button>
+    </form>
+  </div>
+
   <div id="playersList"></div>
 </main>
 
@@ -87,6 +97,7 @@ function renderPlayers(){
           <div style="display:flex;gap:8px;">
             <button class="btn primary" style="flex:1;" onclick="onSavePlayer('${p.id}')">حفظ</button>
             <button class="btn" onclick="toggleEdit('${p.id}')">إلغاء</button>
+            <button class="btn" style="color:var(--red);" onclick="onDeletePlayer('${p.id}', '${p.full_name.replace(/'/g, "\\'")}')">حذف نهائيًا</button>
           </div>
         </div>
       </div>
@@ -114,6 +125,35 @@ async function onSavePlayer(playerId){
   }catch(err){ showToast(err.message, "error"); }
 }
 
+async function onDeletePlayer(playerId, playerName){
+  if(!confirm(`حذف اللاعب "${playerName}" نهائيًا؟ هذا ما فيه تراجع.`)) return;
+  try{
+    await deletePlayer(playerId);
+    showToast("تم حذف اللاعب", "success");
+    playersCache = await listPlayers();
+    renderPlayers();
+    fillTransferSelects();
+  }catch(err){ showToast(err.message, "error"); }
+}
+
+function fillTransferSelects(){
+  const fromSelect = document.getElementById("t_from_team");
+  const toSelect = document.getElementById("t_to_team");
+  const teamOptions = teamsCache.map(t => `<option value="${t.id}">${t.name}</option>`).join("");
+  fromSelect.innerHTML = teamOptions;
+  toSelect.innerHTML = teamOptions;
+  fillTransferPlayers();
+}
+
+function fillTransferPlayers(){
+  const fromTeamId = document.getElementById("t_from_team").value;
+  const playerSelect = document.getElementById("t_player");
+  const options = playersCache.filter(p => p.original_team_id === fromTeamId);
+  playerSelect.innerHTML = options.length
+    ? options.map(p => `<option value="${p.id}">${p.full_name}</option>`).join("")
+    : `<option value="">— لا يوجد لاعبون بهذا الفريق —</option>`;
+}
+
 (async function(){
   const profile = await requireAuth({ adminOnly: true });
   if(!profile) return;
@@ -129,6 +169,7 @@ async function onSavePlayer(playerId){
   document.getElementById("p_position").innerHTML = positionOptions();
   playersCache = await listPlayers();
   renderPlayers();
+  fillTransferSelects();
 
   document.getElementById("playerForm").addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -142,6 +183,27 @@ async function onSavePlayer(playerId){
       e.target.reset();
       playersCache = await listPlayers();
       renderPlayers();
+      fillTransferSelects();
+    }catch(err){ showToast(err.message, "error"); }
+  });
+
+  document.getElementById("t_from_team").addEventListener("change", fillTransferPlayers);
+
+  document.getElementById("transferForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const playerId = document.getElementById("t_player").value;
+    const toTeamId = document.getElementById("t_to_team").value;
+    if(!playerId){ showToast("اختر لاعبًا أولًا", "error"); return; }
+    if(document.getElementById("t_from_team").value === toTeamId){
+      showToast("فريق الوجهة لازم يختلف عن فريق المصدر", "error");
+      return;
+    }
+    try{
+      await transferPlayer(playerId, toTeamId);
+      showToast("تم نقل اللاعب", "success");
+      playersCache = await listPlayers();
+      renderPlayers();
+      fillTransferSelects();
     }catch(err){ showToast(err.message, "error"); }
   });
 })();

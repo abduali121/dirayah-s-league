@@ -24,3 +24,17 @@ async function updatePlayer(playerId, { full_name, position, photo_url, is_activ
   if(error) throw error;
   return data;
 }
+
+async function transferPlayer(playerId, newTeamId){
+  const { data, error } = await sb.rpc("transfer_player", {
+    p_player_id: playerId, p_new_team_id: newTeamId,
+  });
+  if(error) throw error;
+  return data;
+}
+
+async function deletePlayer(playerId){
+  const { data, error } = await sb.rpc("delete_player", { p_player_id: playerId });
+  if(error) throw error;
+  return data;
+}

@@ -93,6 +93,7 @@ function matchCard(m){
         <button class="btn primary" id="confirm-${m.id}" style="font-size:12px;">اعتماد نتيجة: فوز ${m.team_a.name}</button>
         <button class="btn" style="font-size:12px;" onclick="pickWinner('${m.id}','${m.team_b_id}')">اعتماد نتيجة: فوز ${m.team_b.name}</button>
         <button class="btn" style="font-size:12px;" onclick="toggleMatchEdit('${m.id}')">تعديل المباراة</button>
+        <button class="btn" style="font-size:12px;color:var(--red);" onclick="onDeleteMatch('${m.id}')">حذف المباراة</button>
       </div>
       <form id="editform-${m.id}" class="team-edit-form" style="display:none;margin-top:12px;">
         <div class="row-3">
@@ -188,6 +189,15 @@ async function onClosePrediction(matchId){
   try{
     await closePrediction(matchId);
     showToast("تم إغلاق التوقع", "success");
+    await reload();
+  }catch(err){ showToast(err.message, "error"); }
+}
+
+async function onDeleteMatch(matchId){
+  if(!confirm("حذف هذي المباراة نهائيًا؟ يحذف معها أي توقعات أو صفقات إعارة أو تشكيلات مسجَّلة لها.")) return;
+  try{
+    await deleteMatch(matchId);
+    showToast("تم حذف المباراة", "success");
     await reload();
   }catch(err){ showToast(err.message, "error"); }
 }

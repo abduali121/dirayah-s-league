@@ -19,6 +19,14 @@
   .player-check{ display:flex;align-items:center;gap:6px;font-size:12px;padding:6px 0; }
   .loan-tag{ font-size:10px;background:var(--blue-bg);color:var(--blue);padding:2px 6px;border-radius:6px;margin-inline-start:4px; }
   .lineup-wrap{ padding:14px; }
+  .ann-composer{ padding:14px; }
+  .ann-composer textarea{
+    width:100%;min-height:70px;resize:vertical;border:1px solid var(--border);border-radius:var(--radius-sm);
+    background:var(--surface2);color:var(--text);padding:9px 11px;font-family:inherit;font-size:13px;line-height:1.6;
+  }
+  .ann-item{ padding:11px 14px;margin-bottom:6px;display:flex;justify-content:space-between;gap:10px;align-items:flex-start; }
+  .ann-item .body{ font-size:12.5px;font-weight:600;line-height:1.6; }
+  .ann-item .del{ flex-shrink:0;background:none;border:none;color:var(--red);font-size:14px;cursor:pointer;padding:2px; }
 </style>
 </head>
 <body>
@@ -27,6 +35,15 @@
   <div id="teamHero" class="card glass team-hero"></div>
 
   <div id="upcomingMatchWrap"></div>
+
+  <div id="announceSection" hidden>
+    <div class="section-title">انشر تصريحًا باسم فريقك</div>
+    <div class="card glass ann-composer">
+      <textarea id="annBody" maxlength="220" placeholder="اكتب تصريحًا يحمّس الشباب..."></textarea>
+      <button class="btn primary block" style="margin-top:8px;font-size:13px;" onclick="onPublishAnnouncement()">نشر</button>
+    </div>
+    <div id="myAnnouncementsList"></div>
+  </div>
 
   <div id="lineupSection" hidden>
     <div class="section-title">تشكيلة مباراتك القادمة</div>
@@ -51,6 +68,7 @@
 <script src="js/api/ledger.js"></script>
 <script src="js/api/matches.js"></script>
 <script src="js/api/loans.js"></script>
+<script src="js/api/announcements.js"></script>
 <script>
 const teamId = new URLSearchParams(window.location.search).get("id");
 const REASON_LABELS = {
@@ -72,6 +90,14 @@ async function renderTeamRoom(){
     <div style="font-weight:800;font-size:18px;">${team.name}</div>
     <div class="balance">${team.balance_daraya} <span style="font-size:14px;color:var(--text2);">دراية</span></div>
   `;
+
+  const announceSection = document.getElementById("announceSection");
+  if(profile && (profile.role === "super_admin" || profile.team_id === teamId)){
+    announceSection.hidden = false;
+    await renderMyAnnouncements();
+  }else{
+    announceSection.hidden = true;
+  }
 
   const players = await listPlayers();
   playersById = Object.fromEntries(players.map(p => [p.id, p]));
@@ -123,6 +149,48 @@ async function renderTeamRoom(){
 }
 
 // المؤهّلون لتمثيل الفريق بهذي المباراة: لاعبوه الأصليون النشطون + أي لاعب مُعار له لهذي المباراة تحديدًا
+function timeAgo(dateStr){
+  const diffMin = Math.max(1, Math.round((Date.now() - new Date(dateStr).getTime()) / 60000));
+  if(diffMin < 60) return `قبل ${diffMin} د`;
+  const diffHr = Math.round(diffMin / 60);
+  if(diffHr < 24) return `قبل ${diffHr} س`;
+  return `قبل ${Math.round(diffHr / 24)} يوم`;
+}
+
+async function renderMyAnnouncements(){
+  const all = await listAnnouncements(50);
+  const mine = all.filter(a => a.team_id === teamId);
+  document.getElementById("myAnnouncementsList").innerHTML = mine.map(a => `
+    <div class="ann-item glass">
+      <div>
+        <div class="body">${a.body}</div>
+        <div style="font-size:10.5px;color:var(--text2);margin-top:4px;">${timeAgo(a.created_at)}</div>
+      </div>
+      <button class="del" title="حذف" onclick="onDeleteAnnouncement('${a.id}')">✕</button>
+    </div>
+  `).join("") || `<div class="empty-state" style="padding:10px;">ما نشرت أي تصريح بعد</div>`;
+}
+
+async function onPublishAnnouncement(){
+  const input = document.getElementById("annBody");
+  const body = input.value.trim();
+  if(!body){ showToast("اكتب نص التصريح أولًا", "error"); return; }
+  try{
+    await createAnnouncement(body, teamId);
+    input.value = "";
+    showToast("تم نشر التصريح", "success");
+    await renderMyAnnouncements();
+  }catch(err){ showToast(err.message, "error"); }
+}
+
+async function onDeleteAnnouncement(id){
+  try{
+    await deleteAnnouncement(id);
+    showToast("تم الحذف", "success");
+    await renderMyAnnouncements();
+  }catch(err){ showToast(err.message, "error"); }
+}
+
 function eligiblePlayersForTeam(loans){
   const own = Object.values(playersById).filter(p => p.original_team_id === teamId && p.is_active);
   const loanedIn = loans.filter(l => l.borrowing_team_id === teamId).map(l => playersById[l.player_id]).filter(Boolean);

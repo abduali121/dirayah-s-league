@@ -54,3 +54,14 @@ async function fetchStandings(){
     };
   });
 }
+
+// أعلى 5 لاعبين حسب مجموع مبالغ الإعارة اللي فازوا فيها فعليًا — "الأكثر طلبًا" بالدوري
+async function fetchPlayerLoanDemand(limit = 5){
+  const { data, error } = await sb
+    .from("player_loan_demand")
+    .select("*")
+    .order("loan_earnings", { ascending: false })
+    .limit(limit);
+  if(error) throw error;
+  return data;
+}

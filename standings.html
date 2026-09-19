@@ -206,6 +206,14 @@
     </div>
   </div>
 
+  <div id="demandSection" hidden style="margin-bottom:26px;">
+    <div class="sec-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>
+      الأكثر طلبًا
+    </div>
+    <div id="demandList" class="rows"></div>
+  </div>
+
   <div class="sec-title">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M12 20V4M20 20v-7"/></svg>
     ترتيب الدوري
@@ -486,6 +494,27 @@ async function renderStandings(){
   list.innerHTML = leaderHtml + `<div class="rows">${restHtml}</div>`;
 }
 
+// أعلى 5 لاعبين حسب مجموع مبالغ الإعارة اللي فازوا فيها فعليًا (يُستعار ويفوز فريقه المستعير)
+async function renderDemand(){
+  const section = document.getElementById("demandSection");
+  let rows = [];
+  try{ rows = await fetchPlayerLoanDemand(5); }catch(err){ section.hidden = true; return; }
+  if(!rows.length){ section.hidden = true; return; }
+  section.hidden = false;
+
+  document.getElementById("demandList").innerHTML = rows.map((p, i) => `
+    <a class="row" onclick="location.href='team-room.html?id=${p.original_team_id}'">
+      <div class="rank">${i + 1}</div>
+      <div class="avatar" style="background:${p.team_color || '#4b5563'}">${crest({ name: p.team_name, logo_url: p.team_logo_url })}</div>
+      <div class="info">
+        <div class="name">${p.full_name}</div>
+        <div class="meta">${p.team_name} · ${p.team_wins} فوز مع فريقه</div>
+      </div>
+      <div class="bal">${p.loan_earnings} <span style="font-size:9.5px;color:var(--text2);">دراية</span></div>
+    </a>
+  `).join("");
+}
+
 // كباتن الفرق غير المشاركة بمباراة معيّنة يقدرون يتوقعون فائزها من هنا مباشرة —
 // بدل ما يحتاجون يروحون لصفحة كل مباراة يدوّرون عليها
 async function renderPredictionsHub(){
@@ -544,16 +573,17 @@ async function onHubPredict(matchId, teamId, teamName){
   profile = await optionalAuth();
   window.currentUserId = profile ? profile.id : null;
   renderHeader(profile, "standings");
-  await Promise.all([renderMatches(), renderTicker(), renderPhotos(), renderPredictionsHub(), renderStandings()]);
+  await Promise.all([renderMatches(), renderTicker(), renderPhotos(), renderPredictionsHub(), renderStandings(), renderDemand()]);
 
   sb
     .channel("home-live")
     .on("postgres_changes", { event: "*", schema: "public", table: "teams" }, renderStandings)
     .on("postgres_changes", { event: "*", schema: "public", table: "standings_snapshots" }, renderStandings)
-    .on("postgres_changes", { event: "*", schema: "public", table: "matches" }, () => { renderMatches(); renderPredictionsHub(); })
+    .on("postgres_changes", { event: "*", schema: "public", table: "matches" }, () => { renderMatches(); renderPredictionsHub(); renderDemand(); })
     .on("postgres_changes", { event: "*", schema: "public", table: "league_announcements" }, renderTicker)
     .on("postgres_changes", { event: "*", schema: "public", table: "league_photos" }, renderPhotos)
     .on("postgres_changes", { event: "*", schema: "public", table: "match_predictions" }, renderPredictionsHub)
+    .on("postgres_changes", { event: "*", schema: "public", table: "match_loans" }, renderDemand)
     .subscribe();
 })();
 </script>

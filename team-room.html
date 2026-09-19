@@ -70,7 +70,7 @@
 
     <div class="card glass" style="padding:14px;">
       <div style="font-weight:800;font-size:13px;margin-bottom:6px;">احجز يوم إبراز — 75 دراية</div>
-      <div style="font-size:11.5px;color:var(--text2);margin-bottom:10px;">صورتك تظهر كإعلان يملأ الشاشة لأول مرة يدخل فيها أي زائر بذاك اليوم، لمدة 10 ثوانٍ. يحتاج اعتماد الإدارة أولًا.</div>
+      <div style="font-size:11.5px;color:var(--text2);margin-bottom:10px;">صورتك تظهر فورًا كإعلان يملأ الشاشة لأول مرة يدخل فيها أي زائر بذاك اليوم، لمدة 10 ثوانٍ.</div>
       <div id="featuredDaysRow" style="display:flex;gap:6px;overflow-x:auto;margin-bottom:10px;"></div>
       <input type="file" id="featuredPhotoFile" accept="image/*" style="margin-bottom:8px;"/>
       <button class="btn primary block" style="font-size:12.5px;" onclick="onBookFeaturedPhoto()">احجز اليوم المحدد — 75 دراية</button>
@@ -233,7 +233,7 @@ async function onDeleteAnnouncement(id){
 }
 
 let selectedFeatureDate = null;
-const BOOKING_STATUS_LABELS = { pending: "بانتظار اعتماد الإدارة", approved: "معتمد ✓", rejected: "مرفوض (تم استرجاع المبلغ)" };
+const BOOKING_STATUS_LABELS = { pending: "بانتظار اعتماد الإدارة", approved: "منشور ✓", rejected: "أُلغي (تم استرجاع المبلغ)" };
 const DAY_NAMES = ["أحد", "اثنين", "ثلاثاء", "أربعاء", "خميس", "جمعة", "سبت"];
 
 async function renderFeaturedDays(){
@@ -291,7 +291,7 @@ async function onBookFeaturedPhoto(){
     const imageUrl = await uploadPhotoImage(fileInput.files[0]);
     await bookFeaturedPhoto(selectedFeatureDate, imageUrl);
     fileInput.value = "";
-    showToast("تم الحجز، بانتظار اعتماد الإدارة", "success");
+    showToast("تم الحجز — راح تظهر صورتك بذاك اليوم مباشرة", "success");
     await renderTeamRoom();
   }catch(err){ showToast(err.message, "error"); }
 }

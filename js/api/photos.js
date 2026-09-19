@@ -83,12 +83,6 @@ async function bookFeaturedPhoto(featureDate, imageUrl){
   return data;
 }
 
-async function approveFeaturedPhoto(bookingId){
-  const { data, error } = await sb.rpc("approve_featured_photo", { p_booking_id: bookingId });
-  if(error) throw error;
-  return data;
-}
-
 async function rejectFeaturedPhoto(bookingId){
   const { data, error } = await sb.rpc("reject_featured_photo", { p_booking_id: bookingId });
   if(error) throw error;

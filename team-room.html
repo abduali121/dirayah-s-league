@@ -27,14 +27,6 @@
   .ann-item{ padding:11px 14px;margin-bottom:6px;display:flex;justify-content:space-between;gap:10px;align-items:flex-start; }
   .ann-item .body{ font-size:12.5px;font-weight:600;line-height:1.6; }
   .ann-item .del{ flex-shrink:0;background:none;border:none;color:var(--red);font-size:14px;cursor:pointer;padding:2px; }
-  .day-chip{
-    flex-shrink:0;min-width:52px;text-align:center;padding:8px 6px;border-radius:10px;border:1.5px solid var(--border);
-    background:var(--surface2);cursor:pointer;font-size:11px;font-weight:700;
-  }
-  .day-chip.taken{ opacity:.45;cursor:not-allowed;text-decoration:line-through; }
-  .day-chip.picked{ border-color:var(--gold);background:var(--gold-light);color:var(--gold-deep); }
-  .day-chip .dn{ display:block;font-size:9.5px;color:var(--text2);margin-bottom:2px; }
-  .booking-row{ display:flex;justify-content:space-between;align-items:center;padding:8px 12px;margin-bottom:6px;font-size:11.5px; }
 </style>
 </head>
 <body>
@@ -67,15 +59,6 @@
       <input class="field" id="teamPhotoCaption" placeholder="تعليق (اختياري)" style="margin-bottom:8px;"/>
       <button class="btn primary block" style="font-size:12.5px;" onclick="onSubmitTeamPhoto()">نشر — 25 دراية</button>
     </div>
-
-    <div class="card glass" style="padding:14px;">
-      <div style="font-weight:800;font-size:13px;margin-bottom:6px;">احجز يوم إبراز — 75 دراية</div>
-      <div style="font-size:11.5px;color:var(--text2);margin-bottom:10px;">صورتك تظهر فورًا كإعلان يملأ الشاشة لأول مرة يدخل فيها أي زائر بذاك اليوم، لمدة 10 ثوانٍ.</div>
-      <div id="featuredDaysRow" style="display:flex;gap:6px;overflow-x:auto;margin-bottom:10px;"></div>
-      <input type="file" id="featuredPhotoFile" accept="image/*" style="margin-bottom:8px;"/>
-      <button class="btn primary block" style="font-size:12.5px;" onclick="onBookFeaturedPhoto()">احجز اليوم المحدد — 75 دراية</button>
-      <div id="myFeaturedBookings" style="margin-top:10px;"></div>
-    </div>
   </div>
 
   <div class="section-title">القائمة الأصلية</div>
@@ -86,9 +69,7 @@
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="js/supabaseClient.js"></script>
-<script src="js/ui/featuredTakeover.js"></script>
-<script src="js/auth.js"></script>
+<script src="js/supabaseClient.js"></script><script src="js/auth.js"></script>
 <script src="js/ui/toast.js"></script>
 <script src="js/ui/theme.js"></script>
 <script src="js/ui/header.js"></script>
@@ -132,13 +113,7 @@ async function renderTeamRoom(){
 
   // اقتصاد الصور يستهلك رصيد الفريق فعليًا، فمقصور على كابتن الفريق نفسه (لا الإدارة، ما عندها رصيد)
   const photoEconomySection = document.getElementById("photoEconomySection");
-  if(profile && profile.team_id === teamId){
-    photoEconomySection.hidden = false;
-    await renderFeaturedDays();
-    await renderMyFeaturedBookings();
-  }else{
-    photoEconomySection.hidden = true;
-  }
+  photoEconomySection.hidden = !(profile && profile.team_id === teamId);
 
   const players = await listPlayers();
   playersById = Object.fromEntries(players.map(p => [p.id, p]));
@@ -232,43 +207,6 @@ async function onDeleteAnnouncement(id){
   }catch(err){ showToast(err.message, "error"); }
 }
 
-let selectedFeatureDate = null;
-const BOOKING_STATUS_LABELS = { pending: "بانتظار اعتماد الإدارة", approved: "منشور ✓", rejected: "أُلغي (تم استرجاع المبلغ)" };
-const DAY_NAMES = ["أحد", "اثنين", "ثلاثاء", "أربعاء", "خميس", "جمعة", "سبت"];
-
-async function renderFeaturedDays(){
-  let takenDates = [];
-  try{ takenDates = await listFeaturedAvailability(); }catch(err){ /* تجاهل، الأيام تظهر كلها متاحة عند الفشل */ }
-  const takenSet = new Set(takenDates);
-
-  const days = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date();
-    d.setDate(d.getDate() + i);
-    const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, "0"), day = String(d.getDate()).padStart(2, "0");
-    return `${y}-${m}-${day}`;
-  });
-
-  if(!selectedFeatureDate || takenSet.has(selectedFeatureDate)){
-    selectedFeatureDate = days.find(d => !takenSet.has(d)) || null;
-  }
-
-  document.getElementById("featuredDaysRow").innerHTML = days.map(d => {
-    const taken = takenSet.has(d);
-    const picked = d === selectedFeatureDate;
-    const dayName = DAY_NAMES[new Date(d + "T00:00:00").getDay()];
-    return `
-      <div class="day-chip ${taken ? 'taken' : ''} ${picked ? 'picked' : ''}" ${taken ? '' : `onclick="onPickFeatureDate('${d}')"`}>
-        <span class="dn">${dayName}</span>${d.slice(8, 10)}/${d.slice(5, 7)}
-      </div>
-    `;
-  }).join("");
-}
-
-function onPickFeatureDate(d){
-  selectedFeatureDate = d;
-  renderFeaturedDays();
-}
-
 async function onSubmitTeamPhoto(){
   const fileInput = document.getElementById("teamPhotoFile");
   const caption = document.getElementById("teamPhotoCaption").value.trim();
@@ -280,31 +218,6 @@ async function onSubmitTeamPhoto(){
     showToast("تم نشر الصورة", "success");
     await renderTeamRoom();
   }catch(err){ showToast(err.message, "error"); }
-}
-
-async function onBookFeaturedPhoto(){
-  const fileInput = document.getElementById("featuredPhotoFile");
-  if(!selectedFeatureDate){ showToast("ما فيه أيام متاحة بالأسبوع القادم", "error"); return; }
-  if(!fileInput.files.length){ showToast("اختر صورة أولًا", "error"); return; }
-  if(!confirm(`تأكيد حجز يوم ${selectedFeatureDate} بـ75 دراية؟`)) return;
-  try{
-    const imageUrl = await uploadPhotoImage(fileInput.files[0]);
-    await bookFeaturedPhoto(selectedFeatureDate, imageUrl);
-    fileInput.value = "";
-    showToast("تم الحجز — راح تظهر صورتك بذاك اليوم مباشرة", "success");
-    await renderTeamRoom();
-  }catch(err){ showToast(err.message, "error"); }
-}
-
-async function renderMyFeaturedBookings(){
-  let bookings = [];
-  try{ bookings = await listMyFeaturedBookings(); }catch(err){ return; }
-  document.getElementById("myFeaturedBookings").innerHTML = bookings.map(b => `
-    <div class="booking-row glass">
-      <span>${b.feature_date}</span>
-      <span>${BOOKING_STATUS_LABELS[b.status] || b.status}</span>
-    </div>
-  `).join("") || "";
 }
 
 function eligiblePlayersForTeam(loans){

@@ -64,10 +64,11 @@
   .ticker-wrap{ margin-bottom:26px; }
   .ticker{ position:relative;display:grid;overflow:hidden;min-height:64px; }
   .tick{
-    grid-area:1/1;display:flex;align-items:flex-start;gap:10px;opacity:0;pointer-events:none;
+    grid-area:1/1;display:flex;flex-direction:column;gap:6px;opacity:0;pointer-events:none;
     transform:translateX(32px);transition:opacity .4s ease,transform .4s ease;
     background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px;
   }
+  .tick-row{ display:flex;align-items:flex-start;gap:10px; }
   .tick.active{ opacity:1;transform:translateX(0);pointer-events:auto; }
   .tick.leaving{ opacity:0;transform:translateX(-32px); }
   .tick.empty{
@@ -222,6 +223,9 @@
 <script src="js/api/matches.js"></script>
 <script src="js/api/announcements.js"></script>
 <script src="js/api/photos.js"></script>
+<script src="js/api/reactions.js"></script>
+<script src="js/ui/reactions.js"></script>
+<script src="js/ui/featuredTakeover.js"></script>
 <script>
 let profile = null;
 let tickerTimer = null;
@@ -258,9 +262,12 @@ function runRotator(itemSelector, dotsId, intervalMs, count){
   setDots(0);
   if(count < 2) return null;
   let idx = 0;
-  return setInterval(() => {
+  let timer = null;
+
+  function goTo(newIdx){
     const prev = idx;
-    idx = (idx + 1) % count;
+    idx = ((newIdx % count) + count) % count;
+    if(idx === prev) return;
     const prevEl = document.querySelector(`${itemSelector}[data-i="${prev}"]`);
     const nextEl = document.querySelector(`${itemSelector}[data-i="${idx}"]`);
     prevEl?.classList.remove("active");
@@ -268,7 +275,35 @@ function runRotator(itemSelector, dotsId, intervalMs, count){
     nextEl?.classList.add("active");
     setTimeout(() => prevEl?.classList.remove("leaving"), SLIDE_MS);
     setDots(idx);
-  }, intervalMs);
+  }
+  function restart(){
+    if(timer) clearInterval(timer);
+    timer = setInterval(() => goTo(idx + 1), intervalMs);
+  }
+  restart();
+
+  // النقاط قابلة للضغط عشان تقفز لأي عنصر مباشرة، بدل ما تنتظر الدوران التلقائي
+  document.querySelectorAll(`#${dotsId} .dseg`).forEach((el, i) => {
+    el.style.cursor = "pointer";
+    el.addEventListener("click", () => { goTo(i); restart(); });
+  });
+
+  // سحب يمين/يسار على الشريحة نفسها يقفز للي قبلها/بعدها
+  const stackEl = document.querySelector(itemSelector)?.parentElement;
+  if(stackEl){
+    let touchStartX = null;
+    stackEl.addEventListener("touchstart", (e) => { touchStartX = e.touches[0].clientX; }, { passive: true });
+    stackEl.addEventListener("touchend", (e) => {
+      if(touchStartX === null) return;
+      const dx = e.changedTouches[0].clientX - touchStartX;
+      touchStartX = null;
+      if(Math.abs(dx) < 40) return;
+      goTo(dx < 0 ? idx + 1 : idx - 1); // RTL: سحب لليسار = التالي
+      restart();
+    }, { passive: true });
+  }
+
+  return { clear(){ if(timer) clearInterval(timer); } };
 }
 
 function dotsHtml(count){
@@ -300,7 +335,7 @@ function matchCard(m, i){
 }
 
 async function renderMatches(){
-  if(matchesTimer){ clearInterval(matchesTimer); matchesTimer = null; }
+  if(matchesTimer){ matchesTimer.clear(); matchesTimer = null; }
   const all = await listMatches();
   const upcoming = all
     .filter(m => m.status !== "completed" && m.status !== "cancelled")
@@ -334,7 +369,7 @@ function tickerTagStyle(a){
 }
 
 async function renderTicker(){
-  if(tickerTimer){ clearInterval(tickerTimer); tickerTimer = null; }
+  if(tickerTimer){ tickerTimer.clear(); tickerTimer = null; }
   let items = [];
   let loadFailed = false;
   try{ items = await listAnnouncements(12); }
@@ -350,10 +385,16 @@ async function renderTicker(){
     return;
   }
 
+  let reactionRows = [];
+  try{ reactionRows = await listReactions("announcement", items.map(a => a.id)); }catch(err){ /* التفاعلات ثانوية، تجاهل الفشل */ }
+
   document.getElementById("tickerWrap").innerHTML = items.map((a, i) => `
     <div class="tick ${i === 0 ? 'active' : ''}" data-i="${i}">
-      <span class="tb" style="${tickerTagStyle(a)}">${a.team ? a.team.name : 'الإدارة'}</span>
-      <span class="tt">${a.body}</span>
+      <div class="tick-row">
+        <span class="tb" style="${tickerTagStyle(a)}">${a.team ? a.team.name : 'الإدارة'}</span>
+        <span class="tt">${a.body}</span>
+      </div>
+      ${reactionBarHtml("announcement", a.id, reactionRows, window.currentUserId)}
     </div>
   `).join("");
   document.getElementById("tickerDots").innerHTML = items.length > 1 ? dotsHtml(items.length) : "";
@@ -364,7 +405,7 @@ let photoTimer = null;
 const PHOTO_TICK_MS = 8000;
 
 async function renderPhotos(){
-  if(photoTimer){ clearInterval(photoTimer); photoTimer = null; }
+  if(photoTimer){ photoTimer.clear(); photoTimer = null; }
   let items = [];
   let loadFailed = false;
   try{ items = await listPhotos(12); }
@@ -380,6 +421,9 @@ async function renderPhotos(){
     return;
   }
 
+  let reactionRows = [];
+  try{ reactionRows = await listReactions("photo", items.map(p => p.id)); }catch(err){ /* التفاعلات ثانوية، تجاهل الفشل */ }
+
   document.getElementById("photoStack").innerHTML = items.map((p, i) => `
     <div class="photo-item ${i === 0 ? 'active' : ''}" data-i="${i}">
       <div class="photo-frame-pub"><img src="${p.image_url}" alt=""/></div>
@@ -388,6 +432,7 @@ async function renderPhotos(){
           <span class="tb">${p.team ? p.team.name : 'الإدارة'}</span>${p.caption}
         </div>
       ` : ''}
+      <div style="padding:10px 16px 12px;">${reactionBarHtml("photo", p.id, reactionRows, window.currentUserId)}</div>
     </div>
   `).join("");
   document.getElementById("photoDots").innerHTML = items.length > 1 ? dotsHtml(items.length) : "";
@@ -485,6 +530,7 @@ async function onHubPredict(matchId, teamId, teamName){
 
 (async function init(){
   profile = await optionalAuth();
+  window.currentUserId = profile ? profile.id : null;
   renderHeader(profile, "standings");
   await Promise.all([renderMatches(), renderTicker(), renderPhotos(), renderPredictionsHub(), renderStandings()]);
 

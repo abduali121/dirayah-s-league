@@ -67,6 +67,12 @@
     </div>
   </div>
 
+  <div id="featuredBookingsSection">
+    <h3 style="font-size:14px;margin:0 0 10px;">حجوزات يوم الإبراز</h3>
+    <div id="featuredBookingsList"></div>
+  </div>
+
+  <h3 style="font-size:14px;margin:18px 0 10px;">صور الدوري</h3>
   <div id="photosList"></div>
 </main>
 
@@ -123,6 +129,43 @@ function renderList(items){
 async function reload(){
   photosCache = await listPhotos(50);
   renderList(photosCache);
+  await reloadFeaturedBookings();
+}
+
+const BOOKING_STATUS_LABELS = { pending: "بانتظار الاعتماد", approved: "معتمد ✓", rejected: "مرفوض" };
+
+async function reloadFeaturedBookings(){
+  let bookings = [];
+  try{ bookings = await listAllFeaturedBookings(); }
+  catch(err){ document.getElementById("featuredBookingsList").innerHTML = `<div class="empty-state">تعذّر تحميل الحجوزات</div>`; return; }
+  document.getElementById("featuredBookingsList").innerHTML = bookings.map(b => `
+    <div class="photo-card glass">
+      <div class="frame"><img src="${b.image_url}" alt=""/></div>
+      <div class="photo-card-head">
+        <div>
+          <div class="photo-caption">${b.team ? b.team.name : ''} · ${b.feature_date}</div>
+          <div class="photo-meta">${BOOKING_STATUS_LABELS[b.status] || b.status} · ${b.cost_paid} دراية</div>
+        </div>
+        ${b.status === "pending" ? `
+          <div style="display:flex;gap:6px;flex-shrink:0;">
+            <button class="btn primary" style="font-size:11.5px;padding:6px 10px;" onclick="onApproveFeatured('${b.id}')">اعتماد</button>
+            <button class="btn" style="font-size:11.5px;padding:6px 10px;" onclick="onRejectFeatured('${b.id}')">رفض</button>
+          </div>
+        ` : ''}
+      </div>
+    </div>
+  `).join("") || `<div class="empty-state">لا توجد حجوزات بعد</div>`;
+}
+
+async function onApproveFeatured(id){
+  try{ await approveFeaturedPhoto(id); showToast("تم الاعتماد", "success"); await reloadFeaturedBookings(); }
+  catch(err){ showToast(err.message, "error"); }
+}
+
+async function onRejectFeatured(id){
+  if(!confirm("رفض الحجز واسترجاع الرسم للفريق؟")) return;
+  try{ await rejectFeaturedPhoto(id); showToast("تم الرفض واسترجاع الرسم", "success"); await reloadFeaturedBookings(); }
+  catch(err){ showToast(err.message, "error"); }
 }
 
 async function onPublish(){

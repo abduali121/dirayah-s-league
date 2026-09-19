@@ -81,6 +81,8 @@
   .tick .tt{ font-size:12.5px;font-weight:700;line-height:1.55; }
   .dots{ display:flex;gap:5px;justify-content:center;margin-top:10px; }
   .dseg{ width:16px;height:3px;border-radius:2px;background:var(--border);overflow:hidden;position:relative; }
+  /* الشريط المرئي رفيع (3px)، لكن منطقة اللمس أكبر بكثير عشان يسهل الضغط عليه بالجوال */
+  .dseg::before{ content:"";position:absolute;top:-12px;bottom:-12px;left:-3px;right:-3px; }
   .dseg i{
     position:absolute;inset:0;background:var(--gold);transform:scaleX(0);transform-origin:right;
     display:block;transition:transform linear;
@@ -231,6 +233,10 @@ let matchesTimer = null;
 const TICK_MS = 7000;
 const MATCH_TICK_MS = 10000;
 
+// كل قسم عنده "رقم نداء" خاص به — لو نداء أحدث بدأ قبل ما نخلص، نتجاهل نتيجتنا القديمة
+// بدل ما ننشئ مؤقّت دوران ثاني يتزاحم مع الأحدث (كان يسبب قفزات/تسارع بالدوران)
+let matchesRenderToken = 0, tickerRenderToken = 0, photoRenderToken = 0;
+
 // لو رابط الشعار غير صالح (مثلًا أُدخل رقم جوال بالخطأ)، يرجع تلقائيًا لحرف اسم الفريق
 // بدل أيقونة الصورة المكسورة، بدون ما يحتاج فحص الرابط مسبقًا
 function crest(team){
@@ -333,8 +339,10 @@ function matchCard(m, i){
 }
 
 async function renderMatches(){
+  const myToken = ++matchesRenderToken;
   if(matchesTimer){ matchesTimer.clear(); matchesTimer = null; }
   const all = await listMatches();
+  if(myToken !== matchesRenderToken) return;
   const upcoming = all
     .filter(m => m.status !== "completed" && m.status !== "cancelled")
     .sort((a, b) => (a.week?.week_number || 0) - (b.week?.week_number || 0));
@@ -367,11 +375,13 @@ function tickerTagStyle(a){
 }
 
 async function renderTicker(){
+  const myToken = ++tickerRenderToken;
   if(tickerTimer){ tickerTimer.clear(); tickerTimer = null; }
   let items = [];
   let loadFailed = false;
   try{ items = await listAnnouncements(12); }
   catch(err){ loadFailed = true; }
+  if(myToken !== tickerRenderToken) return;
 
   if(!items.length){
     document.getElementById("tickerWrap").innerHTML = `
@@ -385,6 +395,7 @@ async function renderTicker(){
 
   let reactionRows = [];
   try{ reactionRows = await listReactions("announcement", items.map(a => a.id)); }catch(err){ /* التفاعلات ثانوية، تجاهل الفشل */ }
+  if(myToken !== tickerRenderToken) return;
 
   document.getElementById("tickerWrap").innerHTML = items.map((a, i) => `
     <div class="tick ${i === 0 ? 'active' : ''}" data-i="${i}">
@@ -403,11 +414,13 @@ let photoTimer = null;
 const PHOTO_TICK_MS = 8000;
 
 async function renderPhotos(){
+  const myToken = ++photoRenderToken;
   if(photoTimer){ photoTimer.clear(); photoTimer = null; }
   let items = [];
   let loadFailed = false;
   try{ items = await listPhotos(12); }
   catch(err){ loadFailed = true; }
+  if(myToken !== photoRenderToken) return;
 
   if(!items.length){
     document.getElementById("photoStack").innerHTML = `
@@ -421,6 +434,7 @@ async function renderPhotos(){
 
   let reactionRows = [];
   try{ reactionRows = await listReactions("photo", items.map(p => p.id)); }catch(err){ /* التفاعلات ثانوية، تجاهل الفشل */ }
+  if(myToken !== photoRenderToken) return;
 
   document.getElementById("photoStack").innerHTML = items.map((p, i) => `
     <div class="photo-item ${i === 0 ? 'active' : ''}" data-i="${i}">

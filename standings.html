@@ -163,7 +163,6 @@
   .p-meta{ font-size:10px;color:rgba(255,255,255,.7);margin-top:1px; }
   .p-bal{ text-align:left; }
   .p-bal .n{ font-family:'Thmanyah','Tajawal',sans-serif;font-weight:800;font-size:17px;color:var(--gold); }
-  .p-bal .l{ font-size:8.5px;color:rgba(255,255,255,.65); }
 
   .rows{ display:flex;flex-direction:column;gap:8px; }
   .row{
@@ -406,7 +405,7 @@ async function renderMatches(){
     : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/></svg>نتيجة آخر مباراة`;
 
   if(!toShow.length){
-    document.getElementById("matchesStack").innerHTML = `<div class="match-card empty active">لم تُحدَّد أي مباراة بعد</div>`;
+    document.getElementById("matchesStack").innerHTML = `<div class="match-card empty active">🏐 لم تُحدَّد أي مباراة بعد</div>`;
     document.getElementById("matchesDots").innerHTML = "";
     return;
   }
@@ -431,7 +430,7 @@ async function renderTicker(){
 
   if(!items.length){
     document.getElementById("tickerWrap").innerHTML = `
-      <div class="tick empty active">${loadFailed
+      <div class="tick empty active">📢 ${loadFailed
         ? 'لا توجد تصريحات بعد'
         : 'لا توجد تصريحات بعد — أضف أول تصريح من لوحة الإدارة'}</div>
     `;
@@ -470,7 +469,7 @@ async function renderPhotos(){
 
   if(!items.length){
     document.getElementById("photoStack").innerHTML = `
-      <div class="photo-item empty active">${loadFailed
+      <div class="photo-item empty active">📷 ${loadFailed
         ? 'لا توجد صور بعد'
         : 'لا توجد صور بعد — أضف أول صورة من لوحة الإدارة'}</div>
     `;
@@ -503,7 +502,7 @@ async function renderStandings(){
   const rows = await fetchStandings();
   const list = document.getElementById("standingsList");
   if(!rows.length){
-    list.innerHTML = `<div class="empty-state">لا توجد فرق بعد.</div>`;
+    list.innerHTML = `<div class="empty-state">🏆 لا توجد فرق بعد.</div>`;
     return;
   }
   const [leader, ...rest] = rows;
@@ -519,7 +518,7 @@ async function renderStandings(){
             <span class="stat-pill loss">${leader.losses} خسارة</span>
           </div>
         </div>
-        <div class="p-bal"><div class="n">${leader.balance_daraya}</div><div class="l">دراية</div></div>
+        <div class="p-bal"><div class="n">${leader.balance_daraya}<span class="coin lg">د</span></div></div>
       </div>
     </a>
   `;
@@ -534,7 +533,7 @@ async function renderStandings(){
           <span class="stat-pill loss">${t.losses} خسارة</span>
         </div>
       </div>
-      <div class="bal">${t.balance_daraya}</div>
+      <div class="bal">${t.balance_daraya}<span class="coin">د</span></div>
     </a>
   `).join("");
   list.innerHTML = leaderHtml + `<div class="rows">${restHtml}</div>`;
@@ -560,7 +559,7 @@ async function renderDemand(){
           <span class="stat-pill loan">${p.loan_wins} فوز بالإعارة</span>
         </div>
       </div>
-      <div class="bal">${p.loan_earnings} <span style="font-size:9.5px;color:var(--text2);">دراية</span></div>
+      <div class="bal">${p.loan_earnings}<span class="coin">د</span></div>
     </a>
   `).join("");
 }
@@ -595,7 +594,7 @@ async function renderPredictionsHub(){
       <div class="predhub-card glass">
         <div class="predhub-head">
           <span class="predhub-week">الأسبوع ${m.week?.week_number ?? '?'} · ${m.team_a.name} vs ${m.team_b.name}</span>
-          <span class="predhub-reward">${m.prediction_reward} دراية</span>
+          <span class="predhub-reward">${m.prediction_reward}<span class="coin">د</span></span>
         </div>
         ${mine ? `
           <div style="font-size:12.5px;font-weight:700;color:var(--text2);">توقّعك: <b style="color:var(--gold-deep);">${pickedName}</b> ✓ (نهائي)</div>

@@ -92,6 +92,14 @@ label.field-label{ display:block;font-size:12px;color:var(--text2);margin-bottom
 .arrow-same{ color:var(--text2); }
 
 /* تفاعلات (إيموجي) على التصريحات والصور */
+/* رمز موحّد لعملة "دراية" — يحل محل كتابة الكلمة كل مرة بجانب أي رقم فلوس */
+.coin{
+  display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;
+  width:15px;height:15px;border-radius:50%;background:var(--gold);color:#2a2103;
+  font-size:9px;font-weight:900;line-height:1;margin-inline-start:3px;
+}
+.coin.lg{ width:19px;height:19px;font-size:11px; }
+
 .reaction-bar{ display:flex;gap:5px;margin-top:8px;flex-wrap:wrap; }
 .react-btn{
   display:flex;align-items:center;gap:4px;border:1px solid var(--border);background:var(--surface2);

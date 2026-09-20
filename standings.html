@@ -144,6 +144,14 @@
     background:linear-gradient(150deg,var(--accent),var(--accent2));border:1px solid var(--gold);color:#fff;
     cursor:pointer;
   }
+  /* لمعة خفيفة تمر على كرت المتصدّر كل شوي — تحسسك إنه مميز فعلاً مو بس أول بالقائمة */
+  .podium::after{
+    content:"";position:absolute;inset:0;pointer-events:none;
+    background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.18) 45%,transparent 60%);
+    transform:translateX(-120%);animation:podiumShine 5s ease-in-out infinite;
+  }
+  @keyframes podiumShine{ 0%{ transform:translateX(-120%); } 20%,100%{ transform:translateX(120%); } }
+  @media (prefers-reduced-motion:reduce){ .podium::after{ animation:none;display:none; } }
   .p-row{ display:flex;align-items:center;gap:12px;position:relative; }
   .crown{ width:24px;height:24px;flex-shrink:0;color:var(--gold); }
   .p-avatar{

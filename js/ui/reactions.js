@@ -9,7 +9,7 @@ function reactionButtonsHtml(contentType, itemId, rows, myUserId){
     const mine = myUserId
       ? matches.some(r => r.reacted_by === myUserId)
       : matches.some(r => r.guest_key === myGuestKey);
-    return `<button type="button" class="react-btn ${mine ? "mine" : ""}" onclick="onReactionClick('${contentType}','${itemId}','${emoji}',${mine})">${emoji}${matches.length ? `<span class="rcount">${matches.length}</span>` : ""}</button>`;
+    return `<button type="button" class="react-btn ${mine ? "mine" : ""}" onclick="onReactionClick(this,'${contentType}','${itemId}','${emoji}',${mine})">${emoji}${matches.length ? `<span class="rcount">${matches.length}</span>` : ""}</button>`;
   }).join("");
 }
 
@@ -17,7 +17,8 @@ function reactionBarHtml(contentType, itemId, rows, myUserId){
   return `<div class="reaction-bar" id="rx-${contentType}-${itemId}">${reactionButtonsHtml(contentType, itemId, rows, myUserId)}</div>`;
 }
 
-async function onReactionClick(contentType, itemId, emoji, mine){
+async function onReactionClick(btn, contentType, itemId, emoji, mine){
+  btn.classList.add("pop"); // نبضة فورية عند الضغط، قبل ما ننتظر رد الشبكة
   try{
     await toggleReaction(contentType, itemId, emoji, window.currentUserId || null, mine);
     const rows = await listReactions(contentType, [itemId]);

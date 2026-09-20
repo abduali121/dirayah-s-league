@@ -21,6 +21,14 @@
     font-size:12px;font-weight:800;color:var(--text2);margin:0 0 10px;display:flex;align-items:center;gap:6px;
   }
   .sec-title svg{ width:13px;height:13px;color:var(--gold-deep);flex-shrink:0; }
+  .sec-title.blue svg{ color:var(--blue); }
+  .sec-title.green svg{ color:var(--green); }
+  .sec-title.navy svg{ color:var(--accent); }
+
+  /* دخول تدريجي للأقسام عند فتح الصفحة */
+  @keyframes revealUp{ from{ opacity:0;transform:translateY(14px); } to{ opacity:1;transform:translateY(0); } }
+  .reveal{ opacity:0;animation:revealUp .55s cubic-bezier(.16,1,.3,1) forwards; }
+  @media (prefers-reduced-motion:reduce){ .reveal{ animation:none;opacity:1; } }
 
   /* مباريات الأسبوع — بطاقة واحدة تتغيّر تلقائيًا مثل التصريحات بالضبط */
   .matches-wrap{ margin-bottom:26px; }
@@ -66,7 +74,9 @@
   .tick{
     grid-area:1/1;display:flex;flex-direction:column;gap:6px;opacity:0;pointer-events:none;
     transform:translateX(32px);transition:opacity .4s ease,transform .4s ease;
-    background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px;
+    border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px;
+    border-inline-start:3px solid var(--team-color, var(--gold));
+    background:linear-gradient(135deg, color-mix(in srgb, var(--team-color, var(--gold)) 10%, var(--surface)), var(--surface));
   }
   .tick-row{ display:flex;align-items:flex-start;gap:10px; }
   .tick.active{ opacity:1;transform:translateX(0);pointer-events:auto; }
@@ -94,20 +104,26 @@
   .photo-item{
     grid-area:1/1;opacity:0;pointer-events:none;transform:translateX(32px);
     transition:opacity .4s ease,transform .4s ease;
-    background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;
+    background:var(--surface);border-radius:var(--radius-lg);overflow:hidden;
+    box-shadow:0 12px 26px -14px rgba(15,37,64,.4);
   }
   .photo-item.active{ opacity:1;transform:translateX(0);pointer-events:auto; }
   .photo-item.leaving{ opacity:0;transform:translateX(-32px); }
   .photo-item.empty{
     opacity:1;transform:none;position:relative;display:flex;align-items:center;justify-content:center;
-    min-height:64px;padding:14px 16px;color:var(--text2);font-size:12.5px;font-weight:700;border:1px dashed var(--border);
+    min-height:64px;padding:14px 16px;color:var(--text2);font-size:12.5px;font-weight:700;
+    border:1px dashed var(--border);box-shadow:none;
   }
-  .photo-frame-pub{ width:100%;aspect-ratio:4/3; }
+  .photo-frame-pub{ width:100%;aspect-ratio:4/3;position:relative; }
   .photo-frame-pub img{ width:100%;height:100%;object-fit:cover;display:block; }
-  .photo-caption-pub{ padding:12px 16px;font-size:12.5px;font-weight:700;line-height:1.55; }
+  .photo-caption-pub{
+    position:absolute;inset-inline:0;bottom:0;padding:30px 16px 12px;
+    background:linear-gradient(to top, rgba(10,15,25,.8), transparent);
+    color:#fff;font-size:12.5px;font-weight:700;line-height:1.5;
+  }
   .photo-caption-pub .tb{
     font-size:9.5px;font-weight:800;padding:3px 9px;border-radius:999px;margin-inline-end:6px;
-    background:var(--gold-light);color:var(--gold-deep);
+    background:rgba(255,255,255,.2);color:#fff;
   }
 
   /* توقعات مفتوحة */
@@ -165,7 +181,7 @@
 
   <div class="live-strip"><span class="dot"></span>مباشر</div>
 
-  <div id="matchesSection">
+  <div id="matchesSection" class="reveal" style="animation-delay:0s;">
     <div class="sec-title" id="matchesTitle">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/></svg>
       مباريات الأسبوع
@@ -176,15 +192,15 @@
     </div>
   </div>
 
-  <div id="predictionsHubSection" hidden>
-    <div class="sec-title">
+  <div id="predictionsHubSection" class="reveal" style="animation-delay:.08s;" hidden>
+    <div class="sec-title blue">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r=".5" fill="currentColor"/></svg>
       توقعات مفتوحة
     </div>
     <div id="predictionsHubList"></div>
   </div>
 
-  <div id="tickerSection">
+  <div id="tickerSection" class="reveal" style="animation-delay:.16s;">
     <div class="sec-title">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5.5L4 8v4c0 4.5 3 7.5 8 9 5-1.5 8-4.5 8-9V8l-4-1.5M8 12l2.5 2.5L16 9"/></svg>
       تصريحات الدوري
@@ -195,8 +211,8 @@
     </div>
   </div>
 
-  <div id="photosSection">
-    <div class="sec-title">
+  <div id="photosSection" class="reveal" style="animation-delay:.24s;">
+    <div class="sec-title green">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="M21 16l-5-4-4 3-3-2-3 3"/></svg>
       صور الدوري
     </div>
@@ -206,7 +222,7 @@
     </div>
   </div>
 
-  <div id="demandSection" hidden style="margin-bottom:26px;">
+  <div id="demandSection" class="reveal" style="animation-delay:.32s;margin-bottom:26px;" hidden>
     <div class="sec-title">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>
       الأكثر طلبًا
@@ -214,12 +230,14 @@
     <div id="demandList" class="rows"></div>
   </div>
 
-  <div class="sec-title">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M12 20V4M20 20v-7"/></svg>
-    ترتيب الدوري
-  </div>
-  <div id="standingsList">
-    <div class="empty-state"><div class="spinner" style="margin:0 auto 10px;"></div>جارٍ تحميل الترتيب...</div>
+  <div id="rankingSection" class="reveal" style="animation-delay:.4s;">
+    <div class="sec-title navy">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M12 20V4M20 20v-7"/></svg>
+      ترتيب الدوري
+    </div>
+    <div id="standingsList">
+      <div class="empty-state"><div class="spinner" style="margin:0 auto 10px;"></div>جارٍ تحميل الترتيب...</div>
+    </div>
   </div>
 </main>
 
@@ -406,7 +424,7 @@ async function renderTicker(){
   if(myToken !== tickerRenderToken) return;
 
   document.getElementById("tickerWrap").innerHTML = items.map((a, i) => `
-    <div class="tick ${i === 0 ? 'active' : ''}" data-i="${i}">
+    <div class="tick ${i === 0 ? 'active' : ''}" data-i="${i}" style="--team-color:${a.team?.primary_color || 'var(--gold)'}">
       <div class="tick-row">
         <span class="tb" style="${tickerTagStyle(a)}">${a.team ? a.team.name : 'الإدارة'}</span>
         <span class="tt">${a.body}</span>
@@ -446,12 +464,14 @@ async function renderPhotos(){
 
   document.getElementById("photoStack").innerHTML = items.map((p, i) => `
     <div class="photo-item ${i === 0 ? 'active' : ''}" data-i="${i}">
-      <div class="photo-frame-pub"><img src="${p.image_url}" alt=""/></div>
-      ${p.caption ? `
-        <div class="photo-caption-pub">
-          <span class="tb">${p.team ? p.team.name : 'الإدارة'}</span>${p.caption}
-        </div>
-      ` : ''}
+      <div class="photo-frame-pub">
+        <img src="${p.image_url}" alt=""/>
+        ${p.caption ? `
+          <div class="photo-caption-pub">
+            <span class="tb">${p.team ? p.team.name : 'الإدارة'}</span>${p.caption}
+          </div>
+        ` : ''}
+      </div>
       <div style="padding:10px 16px 12px;">${reactionBarHtml("photo", p.id, reactionRows, window.currentUserId)}</div>
     </div>
   `).join("");

@@ -2,7 +2,10 @@
 -- كسب مبلغ الإعارة بالضبط)، مو فوزه مع فريقه الأصلي (كان مو مرتبط بموضوع "الأكثر طلبًا" أصلًا).
 -- =============================================================================
 
-create or replace view player_loan_demand as
+-- Postgres يمنع CREATE OR REPLACE VIEW من تغيير اسم عمود موجود (لازم حذف وإعادة إنشاء)
+drop view if exists player_loan_demand;
+
+create view player_loan_demand as
 with loan_stats as (
   select fl.player_id, sum(fl.winning_bid_amount) as loan_earnings, count(*) as loan_wins
   from match_loans fl

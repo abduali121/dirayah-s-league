@@ -171,6 +171,18 @@
   .name{ font-weight:700;font-size:12.5px; }
   .meta{ font-size:9.5px;color:var(--text2);margin-top:1px; }
   .bal{ font-weight:800;font-size:13px;color:var(--accent); }
+
+  /* شارات صغيرة ملوّنة بدل نص رمادي مسطّح — عشان الأرقام تنقرأ بسرعة بنظرة وحدة */
+  .meta-badges{ display:flex;align-items:center;gap:5px;margin-top:3px;flex-wrap:wrap; }
+  .stat-pill{ font-size:9.5px;font-weight:800;padding:2px 8px;border-radius:999px;white-space:nowrap; }
+  .stat-pill.win{ background:var(--green-bg);color:var(--green); }
+  .stat-pill.loss{ background:var(--red-bg);color:var(--red); }
+  .stat-pill.loan{ background:var(--gold-light);color:var(--gold-deep); }
+  .team-dot{ width:7px;height:7px;border-radius:50%;flex-shrink:0; }
+  /* نسخة على خلفية كحلية غامقة (كرت المتصدّر) — ألوان أفتح تناسب التباين الغامق */
+  .p-meta .stat-pill{ background:rgba(255,255,255,.14); }
+  .p-meta .stat-pill.win{ color:#6ee7a8; }
+  .p-meta .stat-pill.loss{ color:#fca5a5; }
   [data-theme="dark"] .bal{ color:var(--gold); }
 </style>
 </head>
@@ -494,7 +506,10 @@ async function renderStandings(){
         <div class="p-avatar" style="background:${leader.primary_color || '#4b5563'}">${crest(leader)}</div>
         <div class="p-info">
           <div class="p-name">${leader.name}</div>
-          <div class="p-meta">${leader.wins} فوز &middot; ${leader.losses} خسارة</div>
+          <div class="p-meta meta-badges">
+            <span class="stat-pill win">${leader.wins} فوز</span>
+            <span class="stat-pill loss">${leader.losses} خسارة</span>
+          </div>
         </div>
         <div class="p-bal"><div class="n">${leader.balance_daraya}</div><div class="l">دراية</div></div>
       </div>
@@ -506,7 +521,10 @@ async function renderStandings(){
       <div class="avatar" style="background:${t.primary_color || '#4b5563'}">${crest(t)}</div>
       <div class="info">
         <div class="name">${t.name}</div>
-        <div class="meta">${t.wins} فوز &middot; ${t.losses} خسارة</div>
+        <div class="meta-badges">
+          <span class="stat-pill win">${t.wins} فوز</span>
+          <span class="stat-pill loss">${t.losses} خسارة</span>
+        </div>
       </div>
       <div class="bal">${t.balance_daraya}</div>
     </a>
@@ -528,7 +546,11 @@ async function renderDemand(){
       <div class="avatar" style="background:${p.team_color || '#4b5563'}">${crest({ name: p.team_name, logo_url: p.team_logo_url })}</div>
       <div class="info">
         <div class="name">${p.full_name}</div>
-        <div class="meta">${p.team_name} · ${p.loan_wins} فوز بالإعارة</div>
+        <div class="meta-badges">
+          <span class="team-dot" style="background:${p.team_color || '#4b5563'}"></span>
+          <span style="font-size:10.5px;font-weight:700;color:var(--text2);">${p.team_name}</span>
+          <span class="stat-pill loan">${p.loan_wins} فوز بالإعارة</span>
+        </div>
       </div>
       <div class="bal">${p.loan_earnings} <span style="font-size:9.5px;color:var(--text2);">دراية</span></div>
     </a>

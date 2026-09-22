@@ -1,4 +1,4 @@
--- دوري دراية: دوال العمليات (RPC) — كل منطق العمليات الحساسة والمالية هنا
+-- دوري وثاق: دوال العمليات (RPC) — كل منطق العمليات الحساسة والمالية هنا
 -- =========================================================================
 -- كل دالة SECURITY DEFINER (تعمل بصلاحية مالك الجدول فتتجاوز RLS تلقائيًا)
 -- بعد أن تتحقق داخليًا من الصلاحية والشروط بنفسها. أي استدعاء من العميل
@@ -82,22 +82,22 @@ end; $$;
 -- ============ المباريات ============
 
 create or replace function create_match(
-  p_week_id uuid, p_team_a_id uuid, p_team_b_id uuid, p_stake_daraya integer
+  p_week_id uuid, p_team_a_id uuid, p_team_b_id uuid, p_stake_wathaq integer
 ) returns matches
 language plpgsql security definer set search_path = public as $$
 declare v_match matches;
 begin
   if not is_admin() then raise exception 'forbidden: admin only'; end if;
   if p_team_a_id = p_team_b_id then raise exception 'team cannot play itself'; end if;
-  insert into matches (week_id, team_a_id, team_b_id, stake_daraya)
-  values (p_week_id, p_team_a_id, p_team_b_id, p_stake_daraya)
+  insert into matches (week_id, team_a_id, team_b_id, stake_wathaq)
+  values (p_week_id, p_team_a_id, p_team_b_id, p_stake_wathaq)
   returning * into v_match;
   perform log_audit('create_match', 'matches', v_match.id::text, null, to_jsonb(v_match));
   return v_match;
 end; $$;
 
 create or replace function edit_match(
-  p_match_id uuid, p_team_a_id uuid, p_team_b_id uuid, p_stake_daraya integer
+  p_match_id uuid, p_team_a_id uuid, p_team_b_id uuid, p_stake_wathaq integer
 ) returns matches
 language plpgsql security definer set search_path = public as $$
 declare v_before matches; v_after matches;
@@ -109,7 +109,7 @@ begin
     raise exception 'cannot edit a match that is not scheduled (status=%)', v_before.status;
   end if;
   if p_team_a_id = p_team_b_id then raise exception 'team cannot play itself'; end if;
-  update matches set team_a_id = p_team_a_id, team_b_id = p_team_b_id, stake_daraya = p_stake_daraya
+  update matches set team_a_id = p_team_a_id, team_b_id = p_team_b_id, stake_wathaq = p_stake_wathaq
   where id = p_match_id
   returning * into v_after;
   perform log_audit('edit_match', 'matches', p_match_id::text, to_jsonb(v_before), to_jsonb(v_after));
@@ -176,19 +176,19 @@ begin
   select * into v_team from teams where id = p_team_id for update;
   if not found then raise exception 'team not found'; end if;
 
-  v_new_balance := v_team.balance_daraya + p_delta;
+  v_new_balance := v_team.balance_wathaq + p_delta;
   if v_new_balance < 0 then
-    raise exception 'adjustment would make balance negative (current=%, delta=%)', v_team.balance_daraya, p_delta;
+    raise exception 'adjustment would make balance negative (current=%, delta=%)', v_team.balance_wathaq, p_delta;
   end if;
 
   insert into balance_ledger (team_id, delta, balance_after, reason, note, created_by)
   values (p_team_id, p_delta, v_new_balance, 'admin_adjustment', p_reason, auth.uid());
 
-  update teams set balance_daraya = v_new_balance where id = p_team_id returning * into v_team;
+  update teams set balance_wathaq = v_new_balance where id = p_team_id returning * into v_team;
 
   perform log_audit('adjust_balance', 'teams', p_team_id::text,
-    jsonb_build_object('balance_daraya', v_team.balance_daraya - p_delta),
-    jsonb_build_object('balance_daraya', v_team.balance_daraya, 'reason', p_reason));
+    jsonb_build_object('balance_wathaq', v_team.balance_wathaq - p_delta),
+    jsonb_build_object('balance_wathaq', v_team.balance_wathaq, 'reason', p_reason));
 
   return v_team;
 end; $$;
@@ -228,19 +228,19 @@ begin
   v_loser  := case when v_team_a.id = v_loser_team_id then v_team_a else v_team_b end;
 
   -- قاعدة صريحة من المستخدم: لا يجوز أن تتجاوز المداخلة رصيد أي فريق حاليًا
-  if v_match.stake_daraya > v_loser.balance_daraya then
+  if v_match.stake_wathaq > v_loser.balance_wathaq then
     raise exception 'stake (%) exceeds the losing team''s current balance (%) — reduce the stake before confirming',
-      v_match.stake_daraya, v_loser.balance_daraya;
+      v_match.stake_wathaq, v_loser.balance_wathaq;
   end if;
 
   -- تطبيق المداخلة: +للفائز / -للخاسر
   insert into balance_ledger (team_id, delta, balance_after, reason, match_id, created_by)
-  values (v_winner.id, v_match.stake_daraya, v_winner.balance_daraya + v_match.stake_daraya, 'match_result', p_match_id, auth.uid());
+  values (v_winner.id, v_match.stake_wathaq, v_winner.balance_wathaq + v_match.stake_wathaq, 'match_result', p_match_id, auth.uid());
   insert into balance_ledger (team_id, delta, balance_after, reason, match_id, created_by)
-  values (v_loser.id, -v_match.stake_daraya, v_loser.balance_daraya - v_match.stake_daraya, 'match_result', p_match_id, auth.uid());
+  values (v_loser.id, -v_match.stake_wathaq, v_loser.balance_wathaq - v_match.stake_wathaq, 'match_result', p_match_id, auth.uid());
 
-  update teams set balance_daraya = balance_daraya + v_match.stake_daraya where id = v_winner.id;
-  update teams set balance_daraya = balance_daraya - v_match.stake_daraya where id = v_loser.id;
+  update teams set balance_wathaq = balance_wathaq + v_match.stake_wathaq where id = v_winner.id;
+  update teams set balance_wathaq = balance_wathaq - v_match.stake_wathaq where id = v_loser.id;
 
   -- رسم الإعارة الشرطي: يُخصم من المستعير فقط إذا فاز بالمباراة، ويُضاف لصاحب اللاعب الأصلي.
   -- لاعبو الفريق الخاسر المُعارون: لا خصم عليهم إطلاقًا.
@@ -250,15 +250,15 @@ begin
   loop
     insert into balance_ledger (team_id, delta, balance_after, reason, match_id, loan_id, created_by)
     values (v_loan.borrowing_team_id, -v_loan.winning_bid_amount,
-      (select balance_daraya from teams where id = v_loan.borrowing_team_id) - v_loan.winning_bid_amount,
+      (select balance_wathaq from teams where id = v_loan.borrowing_team_id) - v_loan.winning_bid_amount,
       'loan_fee', p_match_id, v_loan.id, auth.uid());
     insert into balance_ledger (team_id, delta, balance_after, reason, match_id, loan_id, created_by)
     values (v_loan.original_team_id, v_loan.winning_bid_amount,
-      (select balance_daraya from teams where id = v_loan.original_team_id) + v_loan.winning_bid_amount,
+      (select balance_wathaq from teams where id = v_loan.original_team_id) + v_loan.winning_bid_amount,
       'loan_fee', p_match_id, v_loan.id, auth.uid());
 
-    update teams set balance_daraya = balance_daraya - v_loan.winning_bid_amount where id = v_loan.borrowing_team_id;
-    update teams set balance_daraya = balance_daraya + v_loan.winning_bid_amount where id = v_loan.original_team_id;
+    update teams set balance_wathaq = balance_wathaq - v_loan.winning_bid_amount where id = v_loan.borrowing_team_id;
+    update teams set balance_wathaq = balance_wathaq + v_loan.winning_bid_amount where id = v_loan.original_team_id;
 
     update match_loans set fee_settled = true where id = v_loan.id;
   end loop;
@@ -267,10 +267,10 @@ begin
   update matches set
     status = 'completed',
     winner_team_id = p_winner_team_id,
-    team_a_balance_before = v_team_a.balance_daraya,
-    team_b_balance_before = v_team_b.balance_daraya,
-    team_a_balance_after = (select balance_daraya from teams where id = v_team_a.id),
-    team_b_balance_after = (select balance_daraya from teams where id = v_team_b.id),
+    team_a_balance_before = v_team_a.balance_wathaq,
+    team_b_balance_before = v_team_b.balance_wathaq,
+    team_a_balance_after = (select balance_wathaq from teams where id = v_team_a.id),
+    team_b_balance_after = (select balance_wathaq from teams where id = v_team_b.id),
     confirmed_at = now(),
     confirmed_by = auth.uid()
   where id = p_match_id
@@ -281,17 +281,17 @@ begin
 
   v_rank := 0;
   for v_team in
-    select t.id, t.balance_daraya,
+    select t.id, t.balance_wathaq,
       (select count(*) from matches m where m.status='completed' and m.winner_team_id = t.id) as wins,
       (select count(*) from matches m where m.status='completed' and m.winner_team_id <> t.id and t.id in (m.team_a_id, m.team_b_id)) as losses
     from teams t
-    order by t.balance_daraya desc, t.name asc
+    order by t.balance_wathaq desc, t.name asc
   loop
     v_rank := v_rank + 1;
-    insert into standings_snapshots (week_id, team_id, balance_daraya, wins, losses, rank)
-    values (v_match.week_id, v_team.id, v_team.balance_daraya, v_team.wins, v_team.losses, v_rank)
+    insert into standings_snapshots (week_id, team_id, balance_wathaq, wins, losses, rank)
+    values (v_match.week_id, v_team.id, v_team.balance_wathaq, v_team.wins, v_team.losses, v_rank)
     on conflict (week_id, team_id) do update
-      set balance_daraya = excluded.balance_daraya, wins = excluded.wins,
+      set balance_wathaq = excluded.balance_wathaq, wins = excluded.wins,
           losses = excluded.losses, rank = excluded.rank;
   end loop;
 
@@ -318,9 +318,9 @@ begin
   for v_row in select * from balance_ledger where match_id = p_match_id loop
     insert into balance_ledger (team_id, delta, balance_after, reason, match_id, loan_id, note, created_by)
     values (v_row.team_id, -v_row.delta,
-      (select balance_daraya from teams where id = v_row.team_id) - v_row.delta,
+      (select balance_wathaq from teams where id = v_row.team_id) - v_row.delta,
       'admin_reversal', p_match_id, v_row.loan_id, 'reversal of ledger #' || v_row.id, auth.uid());
-    update teams set balance_daraya = balance_daraya - v_row.delta where id = v_row.team_id;
+    update teams set balance_wathaq = balance_wathaq - v_row.delta where id = v_row.team_id;
   end loop;
 
   update match_loans set fee_settled = false where match_id = p_match_id;
@@ -414,8 +414,8 @@ begin
   end if;
 
   select * into v_team from teams where id = p_team_id for update;
-  if p_amount > v_team.balance_daraya then
-    raise exception 'bid (%) exceeds your team''s current balance (%)', p_amount, v_team.balance_daraya;
+  if p_amount > v_team.balance_wathaq then
+    raise exception 'bid (%) exceeds your team''s current balance (%)', p_amount, v_team.balance_wathaq;
   end if;
 
   insert into bids (auction_id, team_id, amount) values (p_auction_id, p_team_id, p_amount)
@@ -461,7 +461,7 @@ begin
   select b.* into v_winning_bid
   from bids b
   join teams t on t.id = b.team_id
-  where b.auction_id = p_auction_id and b.amount <= t.balance_daraya
+  where b.auction_id = p_auction_id and b.amount <= t.balance_wathaq
   order by b.amount desc, b.created_at asc
   limit 1;
 

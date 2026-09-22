@@ -9,7 +9,7 @@ create or replace function check_captain_phone(p_phone text)
 returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare
-  v_email text := p_phone || '@dawri.local';
+  v_email text := p_phone || '@wathaq.local';
   v_user_exists boolean;
   v_team_id uuid;
   v_team_name text;

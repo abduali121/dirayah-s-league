@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>صفقات الإعارة - دوري دراية</title>
+<title>صفقات الإعارة - دوري وثاق</title>
 <link rel="stylesheet" href="../assets/css/theme.css"/>
 <link rel="stylesheet" href="../assets/css/components.css"/>
 <style>
@@ -62,7 +62,7 @@ function renderClaims(claims){
         <div class="claim-meta">
           الأسبوع ${match && match.week ? match.week.week_number : '?'} ·
           من ${originalTeam ? originalTeam.name : ''} إلى ${claimingTeam ? claimingTeam.name : ''}<br/>
-          المبلغ: ${c.amount !== null ? c.amount + ' دراية' : '—'}
+          المبلغ: ${c.amount !== null ? c.amount + ' وثاق' : '—'}
         </div>
         ${c.status === 'pending' ? `
           <div style="display:flex;gap:8px;margin-top:10px;">

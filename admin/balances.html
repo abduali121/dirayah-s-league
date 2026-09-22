@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>إدارة الأرصدة - دوري دراية</title>
+<title>إدارة الأرصدة - دوري وثاق</title>
 <link rel="stylesheet" href="../assets/css/theme.css"/>
 <link rel="stylesheet" href="../assets/css/components.css"/>
 <style>
@@ -69,7 +69,7 @@ async function renderLedger(){
   renderAdminNav("balances");
 
   const teams = await listTeams();
-  document.getElementById("a_team").innerHTML = teams.map(t => `<option value="${t.id}">${t.name} (${t.balance_daraya} د)</option>`).join("");
+  document.getElementById("a_team").innerHTML = teams.map(t => `<option value="${t.id}">${t.name} (${t.balance_wathaq} و)</option>`).join("");
 
   await renderLedger();
 
@@ -85,7 +85,7 @@ async function renderLedger(){
       e.target.reset();
       await renderLedger();
       const refreshed = await listTeams();
-      document.getElementById("a_team").innerHTML = refreshed.map(t => `<option value="${t.id}">${t.name} (${t.balance_daraya} د)</option>`).join("");
+      document.getElementById("a_team").innerHTML = refreshed.map(t => `<option value="${t.id}">${t.name} (${t.balance_wathaq} و)</option>`).join("");
     }catch(err){ showToast(err.message, "error"); }
   });
 })();

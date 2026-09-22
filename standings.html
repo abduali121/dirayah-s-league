@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>الرئيسية - دوري دراية</title>
+<title>الرئيسية - دوري وثاق</title>
 <link rel="stylesheet" href="assets/css/theme.css"/>
 <link rel="stylesheet" href="assets/css/components.css"/>
 <style>
@@ -408,7 +408,7 @@ async function renderMatches(){
     : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/></svg>نتيجة آخر مباراة`;
 
   if(!toShow.length){
-    document.getElementById("matchesStack").innerHTML = `<div class="match-card empty active">🏐 لم تُحدَّد أي مباراة بعد</div>`;
+    document.getElementById("matchesStack").innerHTML = `<div class="match-card empty active">⚽ لم تُحدَّد أي مباراة بعد</div>`;
     document.getElementById("matchesDots").innerHTML = "";
     return;
   }
@@ -521,7 +521,7 @@ async function renderStandings(){
             <span class="stat-pill loss">${leader.losses} خسارة</span>
           </div>
         </div>
-        <div class="p-bal"><div class="n">${leader.balance_daraya}<span class="coin lg">د</span></div></div>
+        <div class="p-bal"><div class="n">${leader.balance_wathaq}<span class="coin lg">و</span></div></div>
       </div>
     </a>
   `;
@@ -536,7 +536,7 @@ async function renderStandings(){
           <span class="stat-pill loss">${t.losses} خسارة</span>
         </div>
       </div>
-      <div class="bal">${t.balance_daraya}<span class="coin">د</span></div>
+      <div class="bal">${t.balance_wathaq}<span class="coin">و</span></div>
     </a>
   `).join("");
   list.innerHTML = leaderHtml + `<div class="rows">${restHtml}</div>`;
@@ -562,7 +562,7 @@ async function renderDemand(){
           <span class="stat-pill loan">${p.loan_wins} فوز بالإعارة</span>
         </div>
       </div>
-      <div class="bal">${p.loan_earnings}<span class="coin">د</span></div>
+      <div class="bal">${p.loan_earnings}<span class="coin">و</span></div>
     </a>
   `).join("");
 }
@@ -597,7 +597,7 @@ async function renderPredictionsHub(){
       <div class="predhub-card glass">
         <div class="predhub-head">
           <span class="predhub-week">الأسبوع ${m.week?.week_number ?? '?'} · ${m.team_a.name} vs ${m.team_b.name}</span>
-          <span class="predhub-reward">${m.prediction_reward}<span class="coin">د</span></span>
+          <span class="predhub-reward">${m.prediction_reward}<span class="coin">و</span></span>
         </div>
         ${mine ? `
           <div style="font-size:12.5px;font-weight:700;color:var(--text2);">توقّعك: <b style="color:var(--gold-deep);">${pickedName}</b> ✓ (نهائي)</div>

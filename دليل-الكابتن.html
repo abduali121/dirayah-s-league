@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<title>دليل الكابتن — دوري وثاق</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap');
+@font-face{ font-family:'Thmanyah'; src:url('assets/fonts/thmanyahserifdisplay-Regular.otf') format('opentype'); font-weight:400; }
+@font-face{ font-family:'Thmanyah'; src:url('assets/fonts/thmanyahserifdisplay-Medium.otf') format('opentype'); font-weight:500 700; }
+@font-face{ font-family:'Thmanyah'; src:url('assets/fonts/thmanyahserifdisplay-Bold.otf') format('opentype'); font-weight:800; }
+@font-face{ font-family:'Thmanyah'; src:url('assets/fonts/thmanyahserifdisplay-Black.otf') format('opentype'); font-weight:900; }
+
+:root{
+  --navy:#1a3a5c; --navy-deep:#0f2540; --navy-pale:#e8eef5;
+  --gold:#b8952a; --gold-deep:#8f7020; --gold-pale:#faf5e8;
+  --ink:#0f1f33; --ink2:#4a5a72;
+  --paper:#fcfcfd; --paper2:#f2f4f6; --line:#dde1e6;
+  --green:#16a34a; --green-bg:#eef9ee;
+  --red:#dc2626; --red-bg:#fbefec;
+  --blue:#2a5298; --blue-bg:#eef1f7;
+}
+@page{ size:A4; margin:0; }
+*{ box-sizing:border-box; margin:0; padding:0; }
+body{ font-family:'Tajawal',sans-serif; color:var(--ink); background:#ddd; }
+*{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+@media print{ body{ background:#fff; } }
+h1,h2,h3,h4{ font-family:'Thmanyah','Tajawal',sans-serif; }
+
+.page{
+  width:210mm; height:297mm; background:var(--paper);
+  position:relative; overflow:hidden;
+  padding:16mm 16mm 14mm;
+  page-break-after:always;
+}
+.page:last-child{ page-break-after:auto; }
+
+/* ===== شريط علوي متكرر لكل الصفحات (عدا الغلاف) ===== */
+.runhead{
+  display:flex; align-items:center; justify-content:space-between;
+  padding-bottom:9px; margin-bottom:16px; border-bottom:2px solid var(--navy);
+}
+.runhead .tag{ font-size:11px; font-weight:700; color:var(--gold-deep); letter-spacing:.3px; }
+.runhead .brand{ font-size:12px; font-weight:800; color:var(--navy); display:flex; align-items:center; gap:6px; }
+.runhead .brand img{ width:18px;height:18px;object-fit:contain; }
+
+.pagefoot{
+  position:absolute; bottom:9mm; left:16mm; right:16mm;
+  display:flex; justify-content:space-between; font-size:9.5px; color:var(--ink2);
+  border-top:1px solid var(--line); padding-top:6px;
+}
+
+.kicker{ font-size:12px; font-weight:800; color:var(--gold-deep); margin-bottom:4px; }
+.h1{ font-size:26px; font-weight:900; color:var(--navy-deep); margin-bottom:14px; }
+.h2{ font-size:15px; font-weight:800; color:var(--navy); margin:18px 0 8px; display:flex; align-items:center; gap:8px; }
+.lede{ font-size:12.5px; color:var(--ink2); line-height:1.85; margin-bottom:10px; }
+
+/* بطاقات عامة */
+.card{ background:var(--paper2); border:1px solid var(--line); border-radius:12px; padding:13px 15px; margin-bottom:10px; }
+.card.navy{ background:var(--navy-deep); color:#fff; border:none; }
+.card.navy .lede, .card.navy .h2{ color:#dbe4f0; }
+.card.gold{ background:var(--gold-pale); border-color:#ecdfb8; }
+
+/* خطوات مرقّمة */
+.steps{ display:flex; flex-direction:column; gap:10px; }
+.step{ display:flex; gap:11px; align-items:flex-start; }
+.step .num{
+  flex-shrink:0; width:26px; height:26px; border-radius:50%; background:var(--navy);
+  color:#fff; font-weight:800; font-size:12.5px; display:flex; align-items:center; justify-content:center;
+}
+.step .body{ font-size:12.5px; line-height:1.75; padding-top:2px; }
+.step .body b{ color:var(--navy-deep); }
+.step .ui{
+  display:inline-block; background:#fff; border:1px solid var(--line); border-radius:6px;
+  padding:1px 7px; font-size:11.5px; font-weight:700; color:var(--navy); margin:0 2px;
+}
+
+/* قواعد مسموح/ممنوع */
+.rule{ display:flex; gap:9px; align-items:flex-start; padding:7px 0; font-size:12.5px; line-height:1.7; }
+.rule .mark{ flex-shrink:0; width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:#fff; margin-top:1px; }
+.rule.ok .mark{ background:var(--green); }
+.rule.no .mark{ background:var(--red); }
+
+/* شبكة أعمدة */
+.cols2{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.cols3{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
+
+/* شرائح تبويب */
+.tabrow{ display:flex; gap:8px; margin:6px 0 4px; }
+.tabchip{
+  flex:1; text-align:center; background:#fff; border:1px solid var(--line); border-radius:10px;
+  padding:9px 4px; font-size:11px; font-weight:700; color:var(--navy);
+}
+.tabchip .ic{ font-size:17px; display:block; margin-bottom:3px; }
+
+/* جدول */
+table{ width:100%; border-collapse:collapse; font-size:11.5px; }
+table th{ background:var(--navy-deep); color:#fff; text-align:right; padding:7px 10px; font-weight:700; }
+table td{ padding:7px 10px; border-bottom:1px solid var(--line); color:var(--ink); }
+table tr:nth-child(even) td{ background:#f6f7f9; }
+.pill{ display:inline-block; padding:2px 8px; border-radius:999px; font-size:10.5px; font-weight:700; }
+.pill.pending{ background:var(--blue-bg); color:var(--blue); }
+.pill.approved{ background:var(--green-bg); color:var(--green); }
+.pill.rejected{ background:var(--red-bg); color:var(--red); }
+
+.callout{ border-inline-start:4px solid var(--gold); background:var(--gold-pale); border-radius:8px; padding:10px 13px; font-size:12px; line-height:1.8; color:var(--ink); margin:10px 0; }
+.callout b{ color:var(--gold-deep); }
+.callout.warn{ border-inline-start-color:var(--red); background:var(--red-bg); }
+.callout.warn b{ color:var(--red); }
+
+.quote-box{ background:#fff; border:1.5px dashed var(--navy); border-radius:10px; padding:11px 13px; font-size:12px; color:var(--ink2); text-align:center; margin:8px 0; }
+
+/* ===== الغلاف ===== */
+.cover{ height:100%; text-align:center; position:relative; padding-top:78mm; }
+.cover::before{
+  content:""; position:absolute; inset:0;
+  background:linear-gradient(180deg, var(--navy-pale) 0%, var(--paper) 38%);
+}
+.cover-content{ position:relative; z-index:1; padding:0 16mm; }
+.cover img.logo{ width:140px; margin-bottom:22px; }
+.cover .title{ font-size:42px; font-weight:900; color:var(--navy-deep); letter-spacing:1px; }
+.cover .goldline{ width:70px; height:4px; background:var(--gold); border-radius:2px; margin:15px auto; }
+.cover .subtitle{ font-size:16px; font-weight:700; color:var(--gold-deep); }
+.cover .desc{ font-size:12.5px; color:var(--ink2); margin:18px auto 0; max-width:320px; line-height:1.85; }
+.cover .footer-note{ position:relative; z-index:1; margin-top:34mm; font-size:11px; color:var(--ink2); }
+</style>
+</head>
+<body>
+
+<!-- ===================== صفحة 1 — الغلاف ===================== -->
+<div class="page cover">
+  <div class="cover-content">
+    <img class="logo" src="assets/wathaq-logo.svg" alt="مجموعة وثاق"/>
+    <div class="title">دليل الكابتن</div>
+    <div class="goldline"></div>
+    <div class="subtitle">🏆 دوري وثاق</div>
+    <div class="desc">كل شي تحتاجه ككابتن فريق عشان تدخل، تدير تشكيلتك، تتعاقد على لاعبين، تتوقع نتائج، وتحافظ على رصيد فريقك — بخطوات وقواعد الموقع بالضبط.</div>
+  </div>
+  <div class="footer-note">دليل استخدام داخلي لكباتن فرق مجموعة وثاق</div>
+</div>
+
+<!-- ===================== صفحة 2 — الدخول + التنقل ===================== -->
+<div class="page">
+  <div class="runhead">
+    <div class="brand"><img src="assets/wathaq-logo.svg"/> دوري وثاق</div>
+    <div class="tag">دليل الكابتن</div>
+  </div>
+
+  <div class="kicker">البداية</div>
+  <div class="h1">تسجيل الدخول لأول مرة</div>
+  <p class="lede">حسابك يتفعّل بس إذا رقم جوالك مسجَّل مسبقًا من الإدارة على فريقك. إذا كان الرقم غير مسجَّل، ما راح تقدر تكمّل — تواصل مع إدارة الدوري.</p>
+
+  <div class="steps">
+    <div class="step">
+      <div class="num">1</div>
+      <div class="body">افتح رابط الموقع، اختر <b>تسجيل دخول الكباتن</b>، واكتب رقم جوالك في خانة <span class="ui">رقم الجوال</span> ثم اضغط <span class="ui">متابعة</span>.</div>
+    </div>
+    <div class="step">
+      <div class="num">2</div>
+      <div class="body">أول مرة بس: يطلع لك حقل <span class="ui">اسمك (يظهر للفرق الثانية)</span> — اكتب اسمك كما تبي يظهر للكباتن الثانين.</div>
+    </div>
+    <div class="step">
+      <div class="num">3</div>
+      <div class="body">اختر <b>رمز دخول من 6 أرقام</b> تحفظه لنفسك (خانة <span class="ui">اختر رمز دخولك</span>) وأكّده مرة ثانية في <span class="ui">تأكيد الرمز</span>. هذا الرمز هو باسورد حسابك من الآن فصاعدًا — احفظه.</div>
+    </div>
+    <div class="step">
+      <div class="num">4</div>
+      <div class="body">اضغط <span class="ui">تفعيل الحساب</span> — بيدخلك مباشرة على الموقع.</div>
+    </div>
+  </div>
+
+  <div class="callout"><b>المرة الثانية وما بعدها:</b> بس اكتب رقم جوالك والرمز اللي اخترته في <span class="ui">رمز الدخول</span> واضغط <span class="ui">دخول</span> — بدون خطوات الاسم والتأكيد.</div>
+
+  <div class="h2">🧭 التنقل داخل التطبيق</div>
+  <p class="lede">شريط ثابت بالأسفل يوصلك لكل شي بضغطة وحدة:</p>
+  <div class="tabrow">
+    <div class="tabchip"><span class="ic">🏠</span>الرئيسية</div>
+    <div class="tabchip"><span class="ic">🔢</span>عدّاد النقاط</div>
+    <div class="tabchip"><span class="ic">🎽</span>غرفتي</div>
+  </div>
+  <p class="lede" style="margin-top:8px;"><b style="color:var(--navy);">غرفتي</b> توديك مباشرة لغرفة فريقك (رصيدك، لاعبينك، تشكيلتك). <b style="color:var(--navy);">الرئيسية</b> فيها الترتيب العام ومباريات الأسبوع والتوقعات المفتوحة.</p>
+
+  <div class="pagefoot"><span>دليل الكابتن — دوري وثاق</span><span>2</span></div>
+</div>
+
+<!-- ===================== صفحة 3 — غرفة الفريق ===================== -->
+<div class="page">
+  <div class="runhead">
+    <div class="brand"><img src="assets/wathaq-logo.svg"/> دوري وثاق</div>
+    <div class="tag">دليل الكابتن</div>
+  </div>
+
+  <div class="kicker">🎽 غرفتي</div>
+  <div class="h1">غرفة الفريق</div>
+  <p class="lede">هذي صفحتك الرئيسية ككابتن — فيها رصيدك، قائمة لاعبينك، تشكيلة مباراتك القادمة، وإدارة تصريحات فريقك.</p>
+
+  <div class="card navy">
+    <div class="h2" style="color:#fff;">💰 الرصيد</div>
+    <div class="lede">كل فريق يبدأ الموسم برصيد <b style="color:var(--gold);">1000 وثاق</b>. الرصيد ما ينزل تحت الصفر أبدًا — هذا مضمون من نظام الموقع نفسه، مو بس واجهة الاستخدام.</div>
+  </div>
+
+  <div class="h2">📋 القائمة الأصلية</div>
+  <p class="lede">قائمة لاعبيك الأصليين الثابتين (اللي أضافتهم الإدارة لفريقك). ما تقدر تعدّلها بنفسك — أي تعديل أو نقل لاعب يكون من الإدارة.</p>
+
+  <div class="h2">🧩 تشكيلة مباراتك القادمة</div>
+  <p class="lede">تقدر تحدد مين يمثّل فريقك بالمباراة القادمة مباشرة من هنا (زر <span class="ui">تعديل التشكيلة</span>) بدون ما تحتاج تروح لصفحة المباراة.</p>
+  <div class="rule ok"><div class="mark">✓</div>لاعبوك الأصليون النشطون.</div>
+  <div class="rule ok"><div class="mark">✓</div>أي لاعب اتفقت على إعارته لهذي المباراة تحديدًا واعتمدها المدير.</div>
+  <div class="rule no"><div class="mark">✕</div>يتوقف التعديل تمامًا بعد ما تُعتمد نتيجة المباراة.</div>
+
+  <div class="h2">📢 انشر تصريحًا باسم فريقك</div>
+  <p class="lede">من غرفتك تقدر تكتب تصريح (حماس، تحدي، إعلان) يظهر مباشرة بالصفحة الرئيسية للجميع — بدون ما تحتاج تنتظر الإدارة.</p>
+  <div class="rule ok"><div class="mark">✓</div>تنشر باسم فريقك أنت فقط.</div>
+  <div class="rule ok"><div class="mark">✓</div>تقدر تحذف أي تصريح نشرته أنت بنفسك بضغطة.</div>
+  <div class="rule no"><div class="mark">✕</div>ما تقدر تنشر أو تحذف باسم فريق ثاني.</div>
+
+  <div class="h2">🧾 آخر الحركات المالية</div>
+  <p class="lede">سجل بكل تغيير صار برصيدك (زيادة أو نقصان) وسببه — نتيجة مباراة، رسم إعارة، جائزة توقّع، أو تعديل من الإدارة.</p>
+
+  <div class="pagefoot"><span>دليل الكابتن — دوري وثاق</span><span>3</span></div>
+</div>
+
+<!-- ===================== صفحة 4 — صفقات الإعارة ===================== -->
+<div class="page">
+  <div class="runhead">
+    <div class="brand"><img src="assets/wathaq-logo.svg"/> دوري وثاق</div>
+    <div class="tag">دليل الكابتن</div>
+  </div>
+
+  <div class="kicker">⚔️ صفحة المباراة</div>
+  <div class="h1">صفقات الإعارة</div>
+  <p class="lede">قبل مباراتك، تقدر "تستعير" لاعب من فريق ثالث (مو فريقك ولا الفريق اللي تلعب ضده) يقوّي تشكيلتك بهذي المباراة بالذات.</p>
+
+  <div class="h2">مين تقدر تتعاقد معه؟</div>
+  <div class="rule ok"><div class="mark">✓</div>أي لاعب من فريق ثالث غير مشارك بمباراتك.</div>
+  <div class="rule no"><div class="mark">✕</div>لاعبك أنت (ما تحتاج تستعيره، هو أصلًا لك).</div>
+  <div class="rule no"><div class="mark">✕</div>لاعب الفريق اللي تواجهه بنفس هذي المباراة — ممنوع تمامًا.</div>
+
+  <div class="h2">كيف تسجّل الصفقة؟</div>
+  <div class="steps">
+    <div class="step"><div class="num">1</div><div class="body">تتفاوض مع اللاعب على المبلغ <b>خارج التطبيق</b> (واتساب أو مباشرة).</div></div>
+    <div class="step"><div class="num">2</div><div class="body">تفتح صفحة المباراة ← <span class="ui">صفقات الإعارة</span> ← تختار اللاعب من القائمة وتكتب <span class="ui">المبلغ المتفق عليه</span>، وتضغط <span class="ui">تسجيل الصفقة</span>.</div></div>
+    <div class="step"><div class="num">3</div><div class="body">الصفقة تصير <span class="pill pending">بانتظار موافقة المدير</span> — ما تصير رسمية إلا بعد ما يعتمدها.</div></div>
+    <div class="step"><div class="num">4</div><div class="body">بعد الاعتماد، تقدر تضيف اللاعب لتشكيلتك من نفس المباراة.</div></div>
+  </div>
+
+  <div class="callout"><b>المبلغ سري:</b> ما يشوفه إلا أنت، الفريق صاحب اللاعب، والإدارة — باقي الفرق يشوفون بس إن فيه صفقة، بدون رقم.</div>
+
+  <div class="callout warn"><b>قاعدة الرسم المهمة:</b> مبلغ الصفقة يُخصم من رصيدك أنت (الفريق المستعير) <b>بس إذا فزت</b> بالمباراة. لو خسرت، ما يُخصم منك ولا ريال. والمبلغ لا يرجع لصاحب اللاعب الأصلي — يختفي من اقتصاد الدوري بالكامل.</div>
+
+  <div class="pagefoot"><span>دليل الكابتن — دوري وثاق</span><span>4</span></div>
+</div>
+
+<!-- ===================== صفحة 5 — التوقعات + الرئيسية ===================== -->
+<div class="page">
+  <div class="runhead">
+    <div class="brand"><img src="assets/wathaq-logo.svg"/> دوري وثاق</div>
+    <div class="tag">دليل الكابتن</div>
+  </div>
+
+  <div class="kicker">🎯 فرصة إضافية</div>
+  <div class="h1">توقّع نتائج مباريات غيرك</div>
+  <p class="lede">لما الإدارة تفتح "توقّع" على مباراة، أي فريق <b>غير مشارك فيها</b> يقدر يتوقّع الفائز ويربح وثاق إضافية بدون ما يلعب.</p>
+
+  <div class="rule ok"><div class="mark">✓</div>متاح فقط للفرق اللي ما تلعب هذي المباراة.</div>
+  <div class="rule ok"><div class="mark">✓</div>توقّعت صح؟ تاخذ كامل مبلغ الجائزة المعلن.</div>
+  <div class="rule no"><div class="mark">✕</div>توقّعت غلط؟ ما يصير عليك شي — بس ما تربح.</div>
+  <div class="rule no"><div class="mark">✕</div>التوقّع نهائي لحظة ما تسجّله — ما تقدر تغيّره بعدها.</div>
+
+  <p class="lede">تلقى التوقعات المفتوحة إما داخل صفحة المباراة نفسها، أو أسرع من قسم <b style="color:var(--navy);">"توقعات مفتوحة"</b> بالصفحة الرئيسية مباشرة.</p>
+
+  <div class="h2">🏠 جولة سريعة على الصفحة الرئيسية</div>
+  <div class="cols2">
+    <div class="card"><b style="color:var(--navy);">مباريات الأسبوع</b><div class="lede" style="margin:4px 0 0;">أقرب مباراة قادمة، أو نتيجة آخر مباراة لو ما فيه مباريات قادمة.</div></div>
+    <div class="card"><b style="color:var(--navy);">توقعات مفتوحة</b><div class="lede" style="margin:4px 0 0;">توقّع مباشرة من هنا بدون ما تفتح صفحة المباراة.</div></div>
+    <div class="card"><b style="color:var(--navy);">تصريحات الدوري</b><div class="lede" style="margin:4px 0 0;">آخر تصريحات كل الفرق والإدارة.</div></div>
+    <div class="card"><b style="color:var(--navy);">ترتيب الدوري</b><div class="lede" style="margin:4px 0 0;">مركز فريقك، عدد الفوز/الخسارة، ورصيدك الحالي.</div></div>
+  </div>
+
+  <div class="pagefoot"><span>دليل الكابتن — دوري وثاق</span><span>5</span></div>
+</div>
+
+<!-- ===================== صفحة 6 — قواعد الأرصدة + مرجع سريع ===================== -->
+<div class="page">
+  <div class="runhead">
+    <div class="brand"><img src="assets/wathaq-logo.svg"/> دوري وثاق</div>
+    <div class="tag">دليل الكابتن</div>
+  </div>
+
+  <div class="kicker">💰 القواعد المالية</div>
+  <div class="h1">الرصيد والمداخلة</div>
+
+  <div class="cols2">
+    <div class="card gold">
+      <b style="color:var(--gold-deep);">المداخلة (Stake)</b>
+      <div class="lede" style="margin-top:4px;">كل فريق يدخل المباراة بمبلغ مستقل يحدده المدير — مو بالضرورة نفس مبلغ الفريق الثاني.</div>
+    </div>
+    <div class="card gold">
+      <b style="color:var(--gold-deep);">الفوز والخسارة</b>
+      <div class="lede" style="margin-top:4px;">فزت؟ تربح مبلغ مداخلتك أنت. خسرت؟ يُخصم منك نفس مبلغ مداخلتك أنت — لا علاقة له بمداخلة الفريق الثاني.</div>
+    </div>
+  </div>
+  <div class="callout"><b>حماية تلقائية:</b> لو مداخلتك أكبر من رصيدك الحالي وقت اعتماد نتيجة خسرتها، الموقع يرفض اعتماد النتيجة أصلًا — رصيدك ما ينزل تحت الصفر أبدًا.</div>
+
+  <div class="h2">📖 مرجع سريع للحالات</div>
+
+  <table style="margin-bottom:10px;">
+    <tr><th>حالة المباراة</th><th>يعني</th></tr>
+    <tr><td>مجدولة</td><td>لسه ما بدأت</td></tr>
+    <tr><td>جارية الآن</td><td>المباراة تُلعب حاليًا</td></tr>
+    <tr><td>بانتظار النتيجة</td><td>خلصت، بانتظار اعتماد الإدارة</td></tr>
+    <tr><td>مُعتمدة</td><td>النتيجة رسمية ونهائية</td></tr>
+    <tr><td>ملغاة</td><td>ألغتها الإدارة</td></tr>
+  </table>
+
+  <table>
+    <tr><th>حالة صفقة الإعارة</th><th>يعني</th></tr>
+    <tr><td><span class="pill pending">بانتظار موافقة المدير</span></td><td>سجّلتها، بانتظار اعتماد الإدارة</td></tr>
+    <tr><td><span class="pill approved">معتمدة ✓</span></td><td>رسمية، اللاعب صار مؤهّل لتشكيلتك</td></tr>
+    <tr><td><span class="pill rejected">مرفوضة</span></td><td>رفضتها الإدارة، ما تصير</td></tr>
+  </table>
+
+  <div class="quote-box">فيه سؤال ما غطاه الدليل؟ تواصل مع إدارة الدوري مباشرة. 🏆</div>
+
+  <div class="pagefoot"><span>دليل الكابتن — دوري وثاق</span><span>6</span></div>
+</div>
+
+</body>
+</html>

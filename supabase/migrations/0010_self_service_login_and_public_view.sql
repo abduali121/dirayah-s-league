@@ -1,4 +1,4 @@
--- دوري دراية: تسجيل ذاتي برقم الجوال + مشاهدة عامة بدون تسجيل دخول
+-- دوري وثاق: تسجيل ذاتي برقم الجوال + مشاهدة عامة بدون تسجيل دخول
 -- ========================================================================
 
 -- 1) رقم جوال الكابتن يُسجَّل مسبقًا على الفريق من لوحة الإدارة، ليُستخدم
@@ -43,7 +43,7 @@ end; $$;
 -- 2) إصلاح جذري لدالة إنشاء الحساب: لا تثق أبدًا ببيانات الدور القادمة من العميل
 --    (تسجيل ذاتي مفتوح الآن، ولازم منع أي طرف من ادّعاء "super_admin" لنفسه).
 --    الدور دائمًا "team_captain" افتراضيًا، والفريق يُشتق فقط من مطابقة رقم الجوال
---    (المستخرج من البريد الوهمي المحلي@dawri.local) مع ما سجّله المدير مسبقًا على الفريق.
+--    (المستخرج من البريد الوهمي المحلي@wathaq.local) مع ما سجّله المدير مسبقًا على الفريق.
 create or replace function handle_new_user()
 returns trigger
 language plpgsql security definer set search_path = public as $$
@@ -51,7 +51,7 @@ declare
   v_phone text;
   v_team_id uuid;
 begin
-  if new.email like '%@dawri.local' then
+  if new.email like '%@wathaq.local' then
     v_phone := split_part(new.email, '@', 1);
     select id into v_team_id from teams where captain_phone = v_phone;
   end if;

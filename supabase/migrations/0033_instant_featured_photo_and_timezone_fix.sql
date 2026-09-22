@@ -1,4 +1,4 @@
--- دوري دراية: (1) يوم الإبراز يصير فوري بلا اعتماد إداري، زي الصورة العادية بالضبط —
+-- دوري وثاق: (1) يوم الإبراز يصير فوري بلا اعتماد إداري، زي الصورة العادية بالضبط —
 -- الإدارة تقدر بس تلغي حجز قائم وترجع مبلغه لو احتاجت (بعد النشر، مو قبله).
 -- (2) إصلاح فرق التوقيت: current_date بالسيرفر UTC، بينما "اليوم" عند المستخدم بتوقيت
 -- السعودية (UTC+3) — كان يسبب اختفاء إعلان اليوم لين توقيت السيرفر يتزامن فجرًا.
@@ -24,14 +24,14 @@ begin
   end if;
 
   select * into v_team from teams where id = v_team_id for update;
-  v_new_balance := v_team.balance_daraya - v_cost;
+  v_new_balance := v_team.balance_wathaq - v_cost;
   if v_new_balance < 0 then
-    raise exception 'insufficient balance: featuring a photo costs % دراية (current balance %)', v_cost, v_team.balance_daraya;
+    raise exception 'insufficient balance: featuring a photo costs % وثاق (current balance %)', v_cost, v_team.balance_wathaq;
   end if;
 
   insert into balance_ledger (team_id, delta, balance_after, reason, note, created_by)
   values (v_team_id, -v_cost, v_new_balance, 'featured_photo_fee', 'حجز يوم إبراز', auth.uid());
-  update teams set balance_daraya = v_new_balance where id = v_team_id;
+  update teams set balance_wathaq = v_new_balance where id = v_team_id;
 
   -- فوري: يُعتمد تلقائيًا لحظة الحجز، بدون انتظار الإدارة
   insert into featured_photo_bookings (team_id, feature_date, image_url, cost_paid, status, created_by)
@@ -60,11 +60,11 @@ begin
   if v_row.status = 'rejected' then raise exception 'booking already cancelled'; end if;
 
   select * into v_team from teams where id = v_row.team_id for update;
-  v_new_balance := v_team.balance_daraya + v_row.cost_paid;
+  v_new_balance := v_team.balance_wathaq + v_row.cost_paid;
 
   insert into balance_ledger (team_id, delta, balance_after, reason, note, created_by)
   values (v_row.team_id, v_row.cost_paid, v_new_balance, 'featured_photo_refund', 'استرجاع رسم يوم إبراز مُلغى', auth.uid());
-  update teams set balance_daraya = v_new_balance where id = v_row.team_id;
+  update teams set balance_wathaq = v_new_balance where id = v_row.team_id;
 
   update featured_photo_bookings set status = 'rejected' where id = p_booking_id returning * into v_row;
   perform log_audit('reject_featured_photo', 'featured_photo_bookings', p_booking_id::text, null, to_jsonb(v_row));

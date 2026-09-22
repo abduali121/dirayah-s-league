@@ -1,4 +1,4 @@
--- دوري دراية: لا تسجيل ذاتي مفتوح — فقط الأرقام اللي سجّلتها الإدارة مسبقًا على فريق
+-- دوري وثاق: لا تسجيل ذاتي مفتوح — فقط الأرقام اللي سجّلتها الإدارة مسبقًا على فريق
 -- يقدر صاحبها "يُفعّل" حسابه (يختار رمز دخول لأول مرة). أي رقم غير مسجَّل يُرفض من
 -- قاعدة البيانات نفسها (وليس فقط من الواجهة).
 -- =============================================================================
@@ -9,8 +9,13 @@ language plpgsql security definer set search_path = public as $$
 declare
   v_phone text;
   v_team_id uuid;
+  v_is_bootstrap boolean;
 begin
-  if new.email like '%@dawri.local' then
+  -- أول حساب على الإطلاق (ما فيه ولا صف profiles بعد) يُعتبر تمهيد المدير الأول،
+  -- فيمر بدون تحقق من تسجيله كابتن على فريق — بعده يرجع القيد يشتغل عادي.
+  select not exists(select 1 from profiles) into v_is_bootstrap;
+
+  if new.email like '%@wathaq.local' and not v_is_bootstrap then
     v_phone := split_part(new.email, '@', 1);
     select id into v_team_id from teams where captain_phone = v_phone;
     if v_team_id is null then

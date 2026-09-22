@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>إدارة الفرق - دوري دراية</title>
+<title>إدارة الفرق - دوري وثاق</title>
 <link rel="stylesheet" href="../assets/css/theme.css"/>
 <link rel="stylesheet" href="../assets/css/components.css"/>
 <style>
@@ -60,7 +60,7 @@ function renderTeams(){
       <div class="team-view-row">
         <span class="swatch" style="background:${t.primary_color}"></span>
         <span class="name">${t.name}</span>
-        <span class="meta">${t.balance_daraya} د · ${t.captain_phone ? '📱 ' + t.captain_phone : 'بدون رقم كابتن'}</span>
+        <span class="meta">${t.balance_wathaq} و · ${t.captain_phone ? '📱 ' + t.captain_phone : 'بدون رقم كابتن'}</span>
         ${t.captain_phone ? `<span class="activation-pill ${activated ? 'on' : 'off'}">${activated ? 'تم التفعيل' : 'لم يُفعّل بعد'}</span>` : ''}
         <button class="btn" style="font-size:12px;padding:6px 10px;" onclick="toggleEdit('${t.id}')">تعديل</button>
       </div>
@@ -78,7 +78,7 @@ function renderTeams(){
       </div>
     </div>
   `;
-  }).join("") || `<div class="empty-state">لا توجد فرق بعد. أضف الفرق الستة أعلاه.</div>`;
+  }).join("") || `<div class="empty-state">لا توجد فرق بعد. أضف الفرق الأربعة أعلاه.</div>`;
 }
 
 async function onDeleteTeam(teamId, teamName){

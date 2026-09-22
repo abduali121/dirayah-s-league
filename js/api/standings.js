@@ -2,8 +2,8 @@
 async function fetchStandings(){
   const { data: teams, error: teamsErr } = await sb
     .from("teams")
-    .select("id, name, logo_url, primary_color, balance_daraya")
-    .order("balance_daraya", { ascending: false });
+    .select("id, name, logo_url, primary_color, balance_wathaq")
+    .order("balance_wathaq", { ascending: false });
   if(teamsErr) throw teamsErr;
 
   const { data: matches, error: matchesErr } = await sb

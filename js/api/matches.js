@@ -16,7 +16,7 @@ async function listMatches(){
 async function getMatch(matchId){
   const { data, error } = await sb
     .from("matches")
-    .select("*, week:week_id(week_number), team_a:team_a_id(name, logo_url, primary_color, balance_daraya), team_b:team_b_id(name, logo_url, primary_color, balance_daraya)")
+    .select("*, week:week_id(week_number), team_a:team_a_id(name, logo_url, primary_color, balance_wathaq), team_b:team_b_id(name, logo_url, primary_color, balance_wathaq)")
     .eq("id", matchId)
     .single();
   if(error) throw error;

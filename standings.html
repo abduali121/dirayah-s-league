@@ -90,6 +90,7 @@
     font-size:9.5px;font-weight:800;padding:3px 9px;border-radius:999px;flex-shrink:0;white-space:nowrap;margin-top:1px;
   }
   .tick .tt{ font-size:12.5px;font-weight:700;line-height:1.55; }
+  .tick-date{ font-size:10px;color:var(--text2); }
   .dots{ display:flex;gap:5px;justify-content:center;margin-top:10px; }
   .dseg{ width:16px;height:3px;border-radius:2px;background:var(--border);overflow:hidden;position:relative; }
   /* الشريط المرئي رفيع (3px)، لكن منطقة اللمس أكبر بكثير عشان يسهل الضغط عليه بالجوال */
@@ -267,6 +268,7 @@
 <script src="js/supabaseClient.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/ui/toast.js"></script>
+<script src="js/ui/dates.js"></script>
 <script src="js/ui/theme.js"></script>
 <script src="js/ui/header.js"></script>
 <script src="js/api/standings.js"></script>
@@ -431,11 +433,16 @@ async function renderTicker(){
   catch(err){ loadFailed = true; }
   if(myToken !== tickerRenderToken) return;
 
+  // التصريحات تختفي من الرئيسية بعد أسبوع عشان ما تتكدّس — تبقى محفوظة عند الإدارة كاملة
+  const hadAny = items.length > 0;
+  const weekAgo = Date.now() - 7 * 86400000;
+  items = items.filter(a => new Date(a.created_at).getTime() >= weekAgo);
+
   if(!items.length){
     document.getElementById("tickerWrap").innerHTML = `
       <div class="tick empty active">📢 ${loadFailed
         ? 'لا توجد تصريحات بعد'
-        : 'لا توجد تصريحات بعد — أضف أول تصريح من لوحة الإدارة'}</div>
+        : hadAny ? 'ما فيه تصريحات بآخر أسبوع' : 'لا توجد تصريحات بعد — أضف أول تصريح من لوحة الإدارة'}</div>
     `;
     document.getElementById("tickerDots").innerHTML = "";
     return;
@@ -451,6 +458,7 @@ async function renderTicker(){
         <span class="tb" style="${tickerTagStyle(a)}">${a.team ? a.team.name : 'الإدارة'}</span>
         <span class="tt">${a.body}</span>
       </div>
+      <div class="tick-date">${timeAgo(a.created_at)}</div>
       ${reactionBarHtml("announcement", a.id, reactionRows, window.currentUserId)}
     </div>
   `).join("");
@@ -470,11 +478,16 @@ async function renderPhotos(){
   catch(err){ loadFailed = true; }
   if(myToken !== photoRenderToken) return;
 
+  // الصور تختفي من الرئيسية بعد أسبوع عشان ما تتكدّس — تبقى محفوظة عند الإدارة كاملة
+  const hadAny = items.length > 0;
+  const weekAgo = Date.now() - 7 * 86400000;
+  items = items.filter(p => new Date(p.created_at).getTime() >= weekAgo);
+
   if(!items.length){
     document.getElementById("photoStack").innerHTML = `
       <div class="photo-item empty active">📷 ${loadFailed
         ? 'لا توجد صور بعد'
-        : 'لا توجد صور بعد — أضف أول صورة من لوحة الإدارة'}</div>
+        : hadAny ? 'ما فيه صور بآخر أسبوع' : 'لا توجد صور بعد — أضف أول صورة من لوحة الإدارة'}</div>
     `;
     document.getElementById("photoDots").innerHTML = "";
     return;
@@ -494,7 +507,10 @@ async function renderPhotos(){
           </div>
         ` : ''}
       </div>
-      <div style="padding:10px 16px 12px;">${reactionBarHtml("photo", p.id, reactionRows, window.currentUserId)}</div>
+      <div style="padding:10px 16px 12px;">
+        <div class="tick-date" style="margin-bottom:6px;">${timeAgo(p.created_at)}</div>
+        ${reactionBarHtml("photo", p.id, reactionRows, window.currentUserId)}
+      </div>
     </div>
   `).join("");
   document.getElementById("photoDots").innerHTML = items.length > 1 ? dotsHtml(items.length) : "";

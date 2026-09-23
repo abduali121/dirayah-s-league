@@ -54,6 +54,7 @@
 <script src="../js/supabaseClient.js"></script>
 <script src="../js/auth.js"></script>
 <script src="../js/ui/toast.js"></script>
+<script src="../js/ui/dates.js"></script>
 <script src="../js/ui/theme.js"></script>
 <script src="../js/ui/adminNav.js"></script>
 <script src="../js/api/teams.js"></script>
@@ -61,14 +62,6 @@
 <script src="../js/api/reactions.js"></script>
 <script src="../js/api/rewards.js"></script>
 <script>
-function timeAgo(dateStr){
-  const diffMin = Math.max(1, Math.round((Date.now() - new Date(dateStr).getTime()) / 60000));
-  if(diffMin < 60) return `قبل ${diffMin} د`;
-  const diffHr = Math.round(diffMin / 60);
-  if(diffHr < 24) return `قبل ${diffHr} س`;
-  return `قبل ${Math.round(diffHr / 24)} يوم`;
-}
-
 // شارات "منح مكافأة" — تظهر بس للدرجات اللي وصلها عدد التفاعلات الحالي ولسه ما اتمنحت
 function rewardRowHtml(contentId, reactionCount, granted){
   const mine = granted.filter(g => g.content_id === contentId);

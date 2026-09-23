@@ -1,4 +1,4 @@
--- دوري وثاق: السجل المالي والترتيب والتدقيق
+-- دوري دراية: السجل المالي والترتيب والتدقيق
 -- =============================================
 
 create type ledger_reason as enum ('match_result', 'loan_fee', 'admin_adjustment', 'admin_reversal', 'season_init');
@@ -29,7 +29,7 @@ create table standings_snapshots (
   id              bigint generated always as identity primary key,
   week_id         uuid not null references weeks(id),
   team_id         uuid not null references teams(id),
-  balance_wathaq  integer not null,
+  balance_daraya  integer not null,
   wins            integer not null default 0,
   losses          integer not null default 0,
   rank            integer not null,

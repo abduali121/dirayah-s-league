@@ -39,7 +39,7 @@ async function deletePhotoImage(imageUrl){
   await sb.storage.from("announcement-images").remove([path]);
 }
 
-// صورة عادية من كابتن — 25 وثاق، تُنشر فورًا باسم فريقه بلا حاجة لاعتماد الإدارة
+// صورة عادية من كابتن — 25 دراية، تُنشر فورًا باسم فريقه بلا حاجة لاعتماد الإدارة
 async function submitTeamPhoto(imageUrl, caption = null){
   const { data, error } = await sb.rpc("submit_team_photo", {
     p_image_url: imageUrl, p_caption: caption,

@@ -41,7 +41,7 @@ function normalizeLoginIdentifier(input){
   let digits = trimmed.replace(/\D/g, "");
   if(digits.startsWith("966")) digits = digits.slice(3);
   if(digits.startsWith("0")) digits = digits.slice(1);
-  return `${digits}@wathaq.local`;
+  return `${digits}@dawri.local`;
 }
 
 // كلمة المرور عندنا دائمًا أرقام فقط، فنحوّلها هي كذلك للأرقام الإنجليزية —
@@ -54,7 +54,7 @@ async function signIn(identifier, password){
 }
 
 // تسجيل ذاتي عبر Edge Function (وليس supabase.auth.signUp() مباشرة) لأن Supabase
-// يفرض تأكيد بريد إلكتروني حتى لو كان وهميًا @wathaq.local (بريد لا يمكن الوصول له أصلًا)،
+// يفرض تأكيد بريد إلكتروني حتى لو كان وهميًا @dawri.local (بريد لا يمكن الوصول له أصلًا)،
 // فتفشل العملية بخطأ "email rate limit". الدالة الخادمية تُنشئ الحساب مؤكَّدًا مباشرة
 // عبر Admin API (بمفتاح service_role الذي يبقى على الخادم ولا يصل للمتصفح إطلاقًا)،
 // ثم نسجّل الدخول تلقائيًا بعدها. الدور والفريق لا يُشتقان من أي شيء يرسله العميل —

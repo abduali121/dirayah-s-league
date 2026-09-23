@@ -1,4 +1,4 @@
--- دوري وثاق: الأدوار والفرق
+-- دوري دراية: الأدوار والفرق
 -- ==========================
 
 create extension if not exists pgcrypto;
@@ -11,10 +11,10 @@ create table teams (
   logo_url         text,
   primary_color    text not null default '#1a3a5c',
   secondary_color  text not null default '#b8952a',
-  balance_wathaq   integer not null default 1000,
+  balance_daraya   integer not null default 1000,
   created_at       timestamptz not null default now()
 );
-alter table teams add constraint chk_balance_nonnegative check (balance_wathaq >= 0);
+alter table teams add constraint chk_balance_nonnegative check (balance_daraya >= 0);
 
 create table profiles (
   id              uuid primary key references auth.users(id) on delete cascade,

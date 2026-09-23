@@ -15,9 +15,9 @@ function renderAdminNav(activePage){
   el.innerHTML = `
     <div class="brand">
       <span class="brand-logo">
-        <img src="../assets/wathaq-logo.svg" alt="مجموعة وثاق"/>
+        <img src="../assets/daraya-logo-light.png" alt="مجموعة دراية"/>
       </span>
-      <div><h1>لوحة الإدارة</h1><p>دوري وثاق</p></div>
+      <div><h1>لوحة الإدارة</h1><p>دوري دراية</p></div>
     </div>
     <div style="display:flex;align-items:center;gap:8px;">
       <a href="../standings.html" class="btn" style="padding:8px 12px;font-size:12px;">الموقع</a>

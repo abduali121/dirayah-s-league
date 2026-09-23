@@ -1,5 +1,5 @@
 // يطابق تحويل رقم الجوال في auth.js حرفيًا، حتى يُسجَّل بنفس الصيغة اللي سيُشتق
-// بها لاحقًا من بريد التسجيل الذاتي الوهمي (المحلي@wathaq.local)
+// بها لاحقًا من بريد التسجيل الذاتي الوهمي (المحلي@dawri.local)
 function normalizePhone(input){
   if(!input) return null;
   let digits = toWesternDigits(String(input).trim()).replace(/\D/g, "");

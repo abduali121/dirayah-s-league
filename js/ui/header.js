@@ -11,10 +11,10 @@ function renderHeader(profile, activePage){
   el.innerHTML = `
     <a class="brand" href="${rootPrefix}index.html" style="text-decoration:none;color:inherit;">
       <span class="brand-logo">
-        <img src="${assetsPrefix}wathaq-logo.svg" alt="مجموعة وثاق"/>
+        <img src="${assetsPrefix}daraya-logo-light.png" alt="مجموعة دراية"/>
       </span>
       <div>
-        <h1>دوري وثاق</h1>
+        <h1>دوري دراية</h1>
         <p>${profile ? profile.display_name : ""}</p>
       </div>
     </a>

@@ -1,5 +1,5 @@
--- دوري وثاق: إعادة محاولة الجزء اللي لم يُطبَّق من 0029 (صورة عادية بـ25 وثاق، وحجز
--- "يوم إبراز" بـ75 وثاق يحتاج اعتماد الإدارة) — التفاعلات انتقلت لملف 0030 المستقل.
+-- دوري دراية: إعادة محاولة الجزء اللي لم يُطبَّق من 0029 (صورة عادية بـ25 دراية، وحجز
+-- "يوم إبراز" بـ75 دراية يحتاج اعتماد الإدارة) — التفاعلات انتقلت لملف 0030 المستقل.
 -- =============================================================================
 
 -- ============ توسعة أسباب السجل المالي ============
@@ -8,7 +8,7 @@ alter type ledger_reason add value if not exists 'photo_fee';
 alter type ledger_reason add value if not exists 'featured_photo_fee';
 alter type ledger_reason add value if not exists 'featured_photo_refund';
 
--- ============ صورة عادية من كابتن — 25 وثاق، تُنشر فورًا بلا اعتماد ============
+-- ============ صورة عادية من كابتن — 25 دراية، تُنشر فورًا بلا اعتماد ============
 
 create or replace function submit_team_photo(p_image_url text, p_caption text default null)
 returns league_photos
@@ -25,14 +25,14 @@ begin
   if p_image_url is null or length(trim(p_image_url)) = 0 then raise exception 'image is required'; end if;
 
   select * into v_team from teams where id = v_team_id for update;
-  v_new_balance := v_team.balance_wathaq - v_cost;
+  v_new_balance := v_team.balance_daraya - v_cost;
   if v_new_balance < 0 then
-    raise exception 'insufficient balance: posting a photo costs % وثاق (current balance %)', v_cost, v_team.balance_wathaq;
+    raise exception 'insufficient balance: posting a photo costs % دراية (current balance %)', v_cost, v_team.balance_daraya;
   end if;
 
   insert into balance_ledger (team_id, delta, balance_after, reason, note, created_by)
   values (v_team_id, -v_cost, v_new_balance, 'photo_fee', 'نشر صورة فريق', auth.uid());
-  update teams set balance_wathaq = v_new_balance where id = v_team_id;
+  update teams set balance_daraya = v_new_balance where id = v_team_id;
 
   insert into league_photos (image_url, caption, team_id, created_by)
   values (p_image_url, nullif(trim(coalesce(p_caption, '')), ''), v_team_id, auth.uid())
@@ -44,7 +44,7 @@ end; $$;
 
 grant execute on function submit_team_photo(text, text) to authenticated;
 
--- ============ حجز "يوم الإبراز" — 75 وثاق، يحتاج اعتماد الإدارة ============
+-- ============ حجز "يوم الإبراز" — 75 دراية، يحتاج اعتماد الإدارة ============
 
 create table if not exists featured_photo_bookings (
   id            uuid primary key default gen_random_uuid(),
@@ -96,14 +96,14 @@ begin
   end if;
 
   select * into v_team from teams where id = v_team_id for update;
-  v_new_balance := v_team.balance_wathaq - v_cost;
+  v_new_balance := v_team.balance_daraya - v_cost;
   if v_new_balance < 0 then
-    raise exception 'insufficient balance: featuring a photo costs % وثاق (current balance %)', v_cost, v_team.balance_wathaq;
+    raise exception 'insufficient balance: featuring a photo costs % دراية (current balance %)', v_cost, v_team.balance_daraya;
   end if;
 
   insert into balance_ledger (team_id, delta, balance_after, reason, note, created_by)
   values (v_team_id, -v_cost, v_new_balance, 'featured_photo_fee', 'حجز يوم إبراز', auth.uid());
-  update teams set balance_wathaq = v_new_balance where id = v_team_id;
+  update teams set balance_daraya = v_new_balance where id = v_team_id;
 
   insert into featured_photo_bookings (team_id, feature_date, image_url, cost_paid, created_by)
   values (v_team_id, p_feature_date, p_image_url, v_cost, auth.uid())
@@ -145,11 +145,11 @@ begin
   if v_row.status <> 'pending' then raise exception 'booking already %', v_row.status; end if;
 
   select * into v_team from teams where id = v_row.team_id for update;
-  v_new_balance := v_team.balance_wathaq + v_row.cost_paid;
+  v_new_balance := v_team.balance_daraya + v_row.cost_paid;
 
   insert into balance_ledger (team_id, delta, balance_after, reason, note, created_by)
   values (v_row.team_id, v_row.cost_paid, v_new_balance, 'featured_photo_refund', 'استرجاع رسم يوم إبراز مرفوض', auth.uid());
-  update teams set balance_wathaq = v_new_balance where id = v_row.team_id;
+  update teams set balance_daraya = v_new_balance where id = v_row.team_id;
 
   update featured_photo_bookings set status = 'rejected' where id = p_booking_id returning * into v_row;
   perform log_audit('reject_featured_photo', 'featured_photo_bookings', p_booking_id::text, null, to_jsonb(v_row));

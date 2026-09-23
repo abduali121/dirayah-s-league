@@ -1,4 +1,4 @@
--- دوري وثاق: الأسابيع والمباريات
+-- دوري دراية: الأسابيع والمباريات
 -- ================================
 
 create table weeks (
@@ -15,7 +15,7 @@ create table matches (
   week_id                uuid not null unique references weeks(id),
   team_a_id              uuid not null references teams(id),
   team_b_id              uuid not null references teams(id),
-  stake_wathaq           integer not null check (stake_wathaq > 0),
+  stake_daraya           integer not null check (stake_daraya > 0),
   status                 match_status not null default 'scheduled',
   winner_team_id         uuid references teams(id),
   team_a_balance_before  integer,

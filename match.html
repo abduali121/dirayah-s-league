@@ -76,6 +76,7 @@
 <script src="js/api/players.js"></script>
 <script src="js/api/matches.js"></script>
 <script src="js/api/loans.js"></script>
+<script src="js/api/settings.js"></script>
 <script>
 const matchId = new URLSearchParams(window.location.search).get("id");
 let profile, match, playersById = {}, teamsById = {};
@@ -173,10 +174,17 @@ function renderLoans(loans){
   `).join("") : `<div class="empty-state">لا يوجد لاعبون مُعارون في هذه المباراة</div>`;
 }
 
-function renderClaimForm(){
+async function renderClaimForm(){
   const wrap = document.getElementById("claimFormWrap");
   const canClaim = profile && profile.team_id && (profile.team_id === match.team_a_id || profile.team_id === match.team_b_id);
   if(!canClaim){ wrap.innerHTML = ""; return; }
+
+  let locked = false;
+  try{ locked = await getClaimsLocked(); }catch(err){ /* افتراضيًا مفتوح لو فشل الفحص */ }
+  if(locked){
+    wrap.innerHTML = `<div class="card glass" style="text-align:center;color:var(--red);font-weight:700;font-size:13px;">🔒 الإدارة أغلقت باب التعاقدات مؤقتًا</div>`;
+    return;
+  }
 
   // الإعارة تكون فقط من فرق ثالثة غير مشاركة بهذي المباراة — لا فريقك ولا خصمك بها
   const opponentTeamId = profile.team_id === match.team_a_id ? match.team_b_id : match.team_a_id;
@@ -279,7 +287,7 @@ async function loadAll(){
   await renderLineups(loans);
   renderLoans(loans);
   await renderPrediction();
-  renderClaimForm();
+  await renderClaimForm();
   await renderClaims();
   await renderEvents();
 }

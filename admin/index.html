@@ -51,6 +51,18 @@
   .tl{ font-weight:800;font-size:13px;position:relative;z-index:1; }
   .td{ font-size:10px;color:var(--text2);margin-top:2px;position:relative;z-index:1; }
   .tile.feature .td{ color:rgba(255,255,255,.75); }
+
+  .lock-card{
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);
+    padding:14px 16px;margin-bottom:18px;
+  }
+  .lock-card.locked{ background:var(--red-bg);border-color:var(--red); }
+  .lock-btn{
+    flex-shrink:0;font-size:12.5px;font-weight:800;padding:8px 16px;border-radius:999px;border:none;cursor:pointer;
+  }
+  .lock-btn.off{ background:var(--red);color:#fff; }
+  .lock-btn.on{ background:var(--green);color:#fff; }
 </style>
 </head>
 <body>
@@ -59,6 +71,8 @@
   <div id="adminTabs"></div>
 
   <div class="stats3" id="statGrid"></div>
+
+  <div id="lockCard"></div>
 
   <div class="sec-title">الإدارة</div>
   <div class="tile-grid">
@@ -110,7 +124,32 @@
 <script src="../js/api/teams.js"></script>
 <script src="../js/api/players.js"></script>
 <script src="../js/api/matches.js"></script>
+<script src="../js/api/settings.js"></script>
 <script>
+async function renderLockCard(){
+  let locked;
+  try{ locked = await getClaimsLocked(); }catch(err){ return; }
+  document.getElementById("lockCard").innerHTML = `
+    <div class="lock-card ${locked ? 'locked' : ''}">
+      <div>
+        <div style="font-weight:800;font-size:13px;">${locked ? '🔒 التعاقدات مقفولة الآن' : '🔓 التعاقدات مفتوحة'}</div>
+        <div style="font-size:10.5px;color:var(--text2);margin-top:2px;">${locked ? 'الكباتن ما يقدرون يسجّلون صفقات إعارة جديدة' : 'الكباتن يقدرون يسجّلون صفقات إعارة بشكل طبيعي'}</div>
+      </div>
+      <button class="lock-btn ${locked ? 'on' : 'off'}" onclick="onToggleLock(${locked})">${locked ? 'فتح' : 'قفل'}</button>
+    </div>
+  `;
+}
+
+async function onToggleLock(currentlyLocked){
+  const next = !currentlyLocked;
+  if(!confirm(next ? "قفل باب التعاقدات على كل الدوري الآن؟" : "فتح باب التعاقدات من جديد؟")) return;
+  try{
+    await setClaimsLock(next);
+    showToast(next ? "تم قفل التعاقدات" : "تم فتح التعاقدات", "success");
+    await renderLockCard();
+  }catch(err){ showToast(err.message, "error"); }
+}
+
 (async function(){
   const profile = await requireAuth({ adminOnly: true });
   if(!profile) return;
@@ -123,6 +162,7 @@
     <div class="stat"><div class="n">${players.length}</div><div class="l">لاعبون</div></div>
     <div class="stat"><div class="n" dir="ltr">${completed} / 15</div><div class="l">مباريات مُعتمدة</div></div>
   `;
+  await renderLockCard();
 })();
 </script>
 </body>

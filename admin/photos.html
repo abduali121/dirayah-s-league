@@ -115,10 +115,16 @@ document.getElementById("imageInput").addEventListener("change", (e) => {
 });
 
 function rewardRowHtml(contentId, reactionCount, granted){
-  const grantedTiers = new Set(granted.filter(g => g.content_id === contentId).map(g => g.tier_threshold));
+  const mine = granted.filter(g => g.content_id === contentId);
+  const grantedTiers = new Map(mine.map(g => [g.tier_threshold, g.amount]));
+  const alreadyPaid = mine.reduce((sum, g) => sum + g.amount, 0);
   const tiers = REACTION_REWARD_TIERS.photo.map(t => {
-    if(grantedTiers.has(t.tier)) return `<span class="reward-granted">✓ منحت ${t.amount} (${t.tier}+)</span>`;
-    if(reactionCount >= t.tier) return `<button class="reward-btn" onclick="onGrantReward('${contentId}', ${t.tier})">منح ${t.amount} دراية (${t.tier}+ تفاعل)</button>`;
+    if(grantedTiers.has(t.tier)) return `<span class="reward-granted">✓ منحت ${grantedTiers.get(t.tier)} (${t.tier}+)</span>`;
+    if(reactionCount >= t.tier){
+      const incremental = t.amount - alreadyPaid; // الأرقام إجمالي متراكم — يمنح بس الفرق عن اللي سبق واستلمه
+      if(incremental <= 0) return "";
+      return `<button class="reward-btn" onclick="onGrantReward('${contentId}', ${t.tier})">منح ${incremental} دراية (يوصّله ${t.amount} إجمالي)</button>`;
+    }
     return "";
   }).join("");
   return `<div class="reward-row"><span class="reward-count">🔥 ${reactionCount} تفاعل</span>${tiers}</div>`;

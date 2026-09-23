@@ -8,7 +8,7 @@ async function listGrantedReactionRewards(contentType, contentIds){
   if(!contentIds.length) return [];
   const { data, error } = await sb
     .from("content_reaction_rewards")
-    .select("content_id, tier_threshold")
+    .select("content_id, tier_threshold, amount")
     .eq("content_type", contentType)
     .in("content_id", contentIds);
   if(error) throw error;

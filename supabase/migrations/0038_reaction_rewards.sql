@@ -3,8 +3,13 @@
 -- وكل درجة تُمنح مرة واحدة أبدًا لكل محتوى — حتى لو نقص عدد التفاعلات ورجع زاد،
 -- ما تُمنح ثانية لنفس الدرجة (قيد UNIQUE يمنع هذا تمامًا).
 --
--- جدول التصريحات:  10 تفاعل → 20 دراية · 25 → 50 · 50 → 100
--- جدول الصور (ضِعف): 10 تفاعل → 40 دراية · 25 → 100 · 50 → 200
+-- الأرقام بالجدول هي "إجمالي متراكم" لا مبلغ إضافي مستقل لكل درجة — يعني لو سبق
+-- ومنحت درجة 10 (20 دراية)، ومنحت بعدها درجة 25 (إجماليها 50)، الفريق ياخذ فرق
+-- الاثنين بس (30 دراية إضافية)، مو الـ50 كاملة، عشان ما يصير له إجمالي أكثر من قيمة
+-- الدرجة اللي وصلها فعليًا.
+--
+-- جدول التصريحات (إجمالي متراكم):  10 تفاعل → 20 دراية · 25 → 50 · 50 → 100
+-- جدول الصور (ضِعف، إجمالي متراكم): 10 تفاعل → 40 دراية · 25 → 100 · 50 → 200
 -- =============================================================================
 
 alter type ledger_reason add value if not exists 'reaction_reward';
@@ -31,6 +36,8 @@ language plpgsql security definer set search_path = public as $$
 declare
   v_team_id uuid;
   v_reaction_count integer;
+  v_tier_total integer;
+  v_already_paid integer;
   v_amount integer;
   v_team teams;
   v_new_balance integer;
@@ -54,7 +61,7 @@ begin
     raise exception 'عدد التفاعلات الحالي (%) أقل من الدرجة المطلوبة (%)', v_reaction_count, p_tier;
   end if;
 
-  v_amount := case
+  v_tier_total := case
     when p_content_type = 'announcement' and p_tier = 10 then 20
     when p_content_type = 'announcement' and p_tier = 25 then 50
     when p_content_type = 'announcement' and p_tier = 50 then 100
@@ -63,7 +70,15 @@ begin
     when p_content_type = 'photo' and p_tier = 50 then 200
     else null
   end;
-  if v_amount is null then raise exception 'invalid tier'; end if;
+  if v_tier_total is null then raise exception 'invalid tier'; end if;
+
+  -- الأرقام إجمالي متراكم — نمنح بس الفرق عن أي درجات أقل اتمنحت قبل لنفس المحتوى
+  select coalesce(sum(amount), 0) into v_already_paid from content_reaction_rewards
+    where content_type = p_content_type and content_id = p_content_id;
+  v_amount := v_tier_total - v_already_paid;
+  if v_amount <= 0 then
+    raise exception 'الفريق مستلم مسبقًا مبلغ يساوي أو أكبر من إجمالي هذي الدرجة';
+  end if;
 
   select * into v_team from teams where id = v_team_id for update;
   v_new_balance := v_team.balance_daraya + v_amount;

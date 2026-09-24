@@ -501,11 +501,9 @@ async function renderPhotos(){
     <div class="photo-item ${i === 0 ? 'active' : ''}" data-i="${i}">
       <div class="photo-frame-pub">
         <img src="${p.image_url}" alt=""/>
-        ${p.caption ? `
-          <div class="photo-caption-pub">
-            <span class="tb">${p.team ? p.team.name : 'الإدارة'}</span>${p.caption}
-          </div>
-        ` : ''}
+        <div class="photo-caption-pub">
+          <span class="tb">${p.team ? p.team.name : 'الإدارة'}</span>${p.caption || ''}
+        </div>
       </div>
       <div style="padding:10px 16px 12px;">
         <div class="tick-date" style="margin-bottom:6px;">${timeAgo(p.created_at)}</div>

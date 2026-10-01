@@ -16,9 +16,6 @@
   [data-theme="dark"] .team-hero .balance{ color:var(--gold); }
   .section-title{ font-size:13px;font-weight:800;color:var(--text2);margin:18px 0 8px; }
   .roster-item{ display:flex;justify-content:space-between;align-items:center;padding:10px 14px;margin-bottom:6px;font-size:13px; }
-  .ledger-row{ display:flex;justify-content:space-between;align-items:center;padding:9px 14px;margin-bottom:6px;font-size:12px; }
-  .ledger-row .delta.pos{ color:var(--green);font-weight:800; }
-  .ledger-row .delta.neg{ color:var(--red);font-weight:800; }
   .player-check{ display:flex;align-items:center;gap:6px;font-size:12px;padding:6px 0; }
   .loan-tag{ font-size:10px;background:var(--blue-bg);color:var(--blue);padding:2px 6px;border-radius:6px;margin-inline-start:4px; }
   .lineup-wrap{ padding:14px; }
@@ -66,9 +63,6 @@
 
   <div class="section-title">القائمة الأصلية</div>
   <div id="rosterList"></div>
-
-  <div class="section-title">آخر الحركات المالية</div>
-  <div id="ledgerList"></div>
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
@@ -79,19 +73,12 @@
 <script src="js/ui/header.js"></script>
 <script src="js/api/teams.js"></script>
 <script src="js/api/players.js"></script>
-<script src="js/api/ledger.js"></script>
 <script src="js/api/matches.js"></script>
 <script src="js/api/loans.js"></script>
 <script src="js/api/announcements.js"></script>
 <script src="js/api/photos.js"></script>
 <script>
 const teamId = new URLSearchParams(window.location.search).get("id");
-const REASON_LABELS = {
-  match_result: "نتيجة مباراة", loan_fee: "رسم إعارة",
-  admin_adjustment: "تعديل إداري", admin_reversal: "عكس/تصحيح", season_init: "بداية الموسم", prediction_reward: "جائزة توقّع",
-  photo_fee: "نشر صورة", featured_photo_fee: "حجز يوم إبراز", featured_photo_refund: "استرجاع رسم إبراز",
-  reaction_reward: "مكافأة تفاعل",
-};
 let profile = null;
 let playersById = {};
 
@@ -159,14 +146,6 @@ async function renderTeamRoom(){
     wrap.innerHTML = "";
     lineupSection.hidden = true;
   }
-
-  const ledger = await listLedger(teamId);
-  document.getElementById("ledgerList").innerHTML = ledger.slice(0, 30).map(r => `
-    <div class="ledger-row glass">
-      <span>${REASON_LABELS[r.reason] || r.reason}${r.note ? ' · ' + r.note : ''}</span>
-      <span class="delta ${r.delta >= 0 ? 'pos' : 'neg'}">${r.delta >= 0 ? '+' : ''}${r.delta}</span>
-    </div>
-  `).join("") || `<div class="empty-state">لا توجد حركات بعد</div>`;
 }
 
 // المؤهّلون لتمثيل الفريق بهذي المباراة: لاعبوه الأصليون النشطون + أي لاعب مُعار له لهذي المباراة تحديدًا

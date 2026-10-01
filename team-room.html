@@ -34,6 +34,8 @@
 <main class="container">
   <div id="teamHero" class="card glass team-hero"></div>
 
+  <div id="perfSummary"></div>
+
   <div id="upcomingMatchWrap"></div>
 
   <div id="announceSection" hidden>
@@ -74,6 +76,7 @@
 <script src="js/api/teams.js"></script>
 <script src="js/api/players.js"></script>
 <script src="js/api/matches.js"></script>
+<script src="js/api/standings.js"></script>
 <script src="js/api/loans.js"></script>
 <script src="js/api/announcements.js"></script>
 <script src="js/api/photos.js"></script>
@@ -81,6 +84,52 @@
 const teamId = new URLSearchParams(window.location.search).get("id");
 let profile = null;
 let playersById = {};
+
+// ملخص أداء غير مالي: الترتيب، فوز/خسارة، نموذج آخر 5 مباريات، وأكثر لاعب مطلوب بالإعارة
+async function renderPerformanceSummary(){
+  const [standings, matchesRes, demandRes] = await Promise.all([
+    fetchStandings().catch(() => []),
+    sb.from("matches").select("team_a_id, team_b_id, winner_team_id")
+      .or(`team_a_id.eq.${teamId},team_b_id.eq.${teamId}`).eq("status", "completed")
+      .order("created_at", { ascending: false }).limit(5),
+    sb.from("player_loan_demand").select("*").eq("original_team_id", teamId)
+      .order("loan_earnings", { ascending: false }).limit(1),
+  ]);
+
+  const mine = standings.find(t => t.id === teamId);
+  const recentMatches = (matchesRes.data || []).slice().reverse(); // الأقدم أول، عشان الشريط يُقرأ من اليمين للأحدث
+  const topLoanPlayer = demandRes.data?.[0];
+
+  if(!mine && !recentMatches.length && !topLoanPlayer){
+    document.getElementById("perfSummary").innerHTML = "";
+    return;
+  }
+
+  document.getElementById("perfSummary").innerHTML = `
+    <div class="card glass" style="padding:14px 16px;margin-bottom:14px;">
+      ${mine ? `
+        <div style="display:flex;justify-content:space-between;align-items:center;${recentMatches.length || topLoanPlayer ? 'margin-bottom:10px;' : ''}">
+          <div style="font-weight:800;font-size:13px;">🏅 المركز ${mine.rank} بالدوري</div>
+          <div class="meta-badges" style="margin-top:0;">
+            <span class="stat-pill win">${mine.wins} فوز</span>
+            <span class="stat-pill loss">${mine.losses} خسارة</span>
+          </div>
+        </div>
+      ` : ''}
+      ${recentMatches.length ? `
+        <div style="display:flex;align-items:center;gap:8px;${topLoanPlayer ? 'margin-bottom:10px;' : ''}">
+          <span style="font-size:11px;color:var(--text2);">آخر ${recentMatches.length} مباريات:</span>
+          <div style="display:flex;gap:4px;">
+            ${recentMatches.map(m => `<span style="width:15px;height:15px;border-radius:50%;background:${m.winner_team_id === teamId ? 'var(--green)' : 'var(--red)'};"></span>`).join("")}
+          </div>
+        </div>
+      ` : ''}
+      ${topLoanPlayer ? `
+        <div style="font-size:11.5px;color:var(--text2);">🔥 أكثر لاعب مطلوب: <b style="color:var(--text);">${topLoanPlayer.full_name}</b> (${topLoanPlayer.loan_earnings}<span class="coin">د</span> من الإعارة)</div>
+      ` : ''}
+    </div>
+  `;
+}
 
 async function renderTeamRoom(){
   const { data: team, error } = await sb.from("teams").select("*").eq("id", teamId).single();
@@ -94,6 +143,8 @@ async function renderTeamRoom(){
     <div style="font-weight:800;font-size:18px;">${team.name}</div>
     <div class="balance">${team.balance_daraya}<span class="coin lg">د</span></div>
   `;
+
+  await renderPerformanceSummary();
 
   const announceSection = document.getElementById("announceSection");
   if(profile && (profile.role === "super_admin" || profile.team_id === teamId)){

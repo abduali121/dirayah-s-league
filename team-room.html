@@ -87,20 +87,31 @@ let playersById = {};
 
 // ملخص أداء غير مالي: الترتيب، فوز/خسارة، نموذج آخر 5 مباريات، وأكثر لاعب مطلوب بالإعارة
 async function renderPerformanceSummary(){
-  const [standings, matchesRes, demandRes] = await Promise.all([
+  const [standings, matchesRes, demandRes, loansRes] = await Promise.all([
     fetchStandings().catch(() => []),
     sb.from("matches").select("team_a_id, team_b_id, winner_team_id")
       .or(`team_a_id.eq.${teamId},team_b_id.eq.${teamId}`).eq("status", "completed")
       .order("created_at", { ascending: false }).limit(5),
     sb.from("player_loan_demand").select("*").eq("original_team_id", teamId)
       .order("loan_earnings", { ascending: false }).limit(1),
+    sb.from("match_loans").select("player_id, players:player_id!inner(full_name, original_team_id)")
+      .eq("players.original_team_id", teamId),
   ]);
 
   const mine = standings.find(t => t.id === teamId);
   const recentMatches = (matchesRes.data || []).slice().reverse(); // الأقدم أول، عشان الشريط يُقرأ من اليمين للأحدث
   const topLoanPlayer = demandRes.data?.[0];
 
-  if(!mine && !recentMatches.length && !topLoanPlayer){
+  // أكثر لاعب "استُعير" — عدد مرات إعارته فعليًا، بغض النظر عن فوز الفريق المستعير أو خسارته
+  let mostLoanedPlayer = null;
+  if(loansRes.data?.length){
+    const counts = {};
+    loansRes.data.forEach(l => { counts[l.player_id] = (counts[l.player_id] || 0) + 1; });
+    const topId = Object.keys(counts).reduce((a, b) => counts[a] >= counts[b] ? a : b);
+    mostLoanedPlayer = { name: loansRes.data.find(l => l.player_id === topId).players.full_name, count: counts[topId] };
+  }
+
+  if(!mine && !recentMatches.length && !topLoanPlayer && !mostLoanedPlayer){
     document.getElementById("perfSummary").innerHTML = "";
     return;
   }
@@ -125,7 +136,10 @@ async function renderPerformanceSummary(){
         </div>
       ` : ''}
       ${topLoanPlayer ? `
-        <div style="font-size:11.5px;color:var(--text2);">🔥 أكثر لاعب مطلوب: <b style="color:var(--text);">${topLoanPlayer.full_name}</b> (${topLoanPlayer.loan_earnings}<span class="coin">د</span> من الإعارة)</div>
+        <div style="font-size:11.5px;color:var(--text2);${mostLoanedPlayer ? 'margin-bottom:4px;' : ''}">🔥 أكثر لاعب مطلوب: <b style="color:var(--text);">${topLoanPlayer.full_name}</b> (${topLoanPlayer.loan_earnings}<span class="coin">د</span> من الإعارة)</div>
+      ` : ''}
+      ${mostLoanedPlayer ? `
+        <div style="font-size:11.5px;color:var(--text2);">🤝 أكثر لاعب استُعير: <b style="color:var(--text);">${mostLoanedPlayer.name}</b> (${mostLoanedPlayer.count} ${mostLoanedPlayer.count === 1 ? 'مرة' : 'مرات'})</div>
       ` : ''}
     </div>
   `;

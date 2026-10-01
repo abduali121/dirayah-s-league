@@ -108,6 +108,23 @@ label.field-label{ display:block;font-size:12px;color:var(--text2);margin-bottom
 .stat-pill.loan{ background:var(--gold-light);color:var(--gold-deep); }
 .team-dot{ width:7px;height:7px;border-radius:50%;flex-shrink:0; }
 
+/* قائمة صفوف عامة (فريق/لاعب + معلومة جانبية + قيمة) — تُستخدم بأكثر من صفحة */
+.rows{ display:flex;flex-direction:column;gap:8px; }
+.row{
+  display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius);
+  background:var(--surface);border:1px solid var(--border);cursor:pointer;
+}
+.avatar{
+  width:32px;height:32px;border-radius:9px;flex-shrink:0;color:#fff;font-weight:800;font-size:12px;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 2px 6px -1px rgba(15,23,42,.35);
+}
+.info{ flex:1;min-width:0; }
+.name{ font-weight:700;font-size:12.5px; }
+.meta{ font-size:9.5px;color:var(--text2);margin-top:1px; }
+.bal{ font-weight:800;font-size:13px;color:var(--accent); }
+[data-theme="dark"] .bal{ color:var(--gold); }
+
 .reaction-bar{ display:flex;gap:5px;margin-top:8px;flex-wrap:wrap; }
 .react-btn{
   display:flex;align-items:center;gap:4px;border:1px solid var(--border);background:var(--surface2);

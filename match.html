@@ -193,6 +193,18 @@ async function renderStakeForm(loans){
 
   const floor = loans.filter(l => l.borrowing_team_id === myTeam).reduce((sum, l) => sum + l.winning_bid_amount, 0);
   const balance = teamsById[myTeam].balance_daraya;
+  // لازم يدخل تشكيلة فريقه أولًا قبل ما يثبّت المبلغ
+  const { count: lineupCount } = await sb.from("match_lineups").select("id", { count: "exact", head: true })
+    .eq("match_id", matchId).eq("team_id", myTeam);
+  if(!lineupCount){
+    wrap.innerHTML = `
+      <div class="card glass" style="text-align:center;font-size:13px;line-height:1.8;">
+        <b>🎯 مبلغ تحدّي فريقك</b><br/>
+        <span style="color:var(--text2);">ادخل تشكيلة فريقك أولًا (زر "تعديل التشكيلة" تحت)، بعدها تقدر تثبّت مبلغك.</span>
+      </div>`;
+    return;
+  }
+
   let current = null;
   try{ current = await getMyStakeOffer(matchId, myTeam); }catch(err){ /* ما فيه مبلغ مثبّت */ }
 

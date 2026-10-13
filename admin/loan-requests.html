@@ -14,12 +14,52 @@
   .st-pending{ background:var(--orange-bg);color:var(--orange); }
   .st-approved{ background:var(--green-bg);color:var(--green); }
   .st-rejected{ background:var(--red-bg);color:var(--red); }
+  .sec-title{ font-size:14px;font-weight:800;margin:6px 0 10px; }
+  .deal-form{ padding:14px;margin-bottom:14px; }
+  .deal-form .grid{ display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px; }
+  .deal-form .grid .full{ grid-column:1 / -1; }
+  .deal-form-actions{ display:flex;gap:8px; }
+  .deal-card{ padding:12px 14px;margin-bottom:8px; }
+  .deal-card.locked{ opacity:.7; }
+  .deal-actions{ display:flex;gap:8px;margin-top:10px; }
+  .deal-note{ font-size:11px;color:var(--text2);margin-top:6px; }
 </style>
 </head>
 <body>
 <header id="appHeader"></header>
 <main class="container">
   <div id="adminTabs"></div>
+
+  <h2 class="sec-title">التعاقدات الفعلية</h2>
+  <div class="deal-form glass" id="dealForm">
+    <h3 id="dealFormTitle" style="font-size:13px;margin-bottom:10px;">إضافة تعاقد مباشر</h3>
+    <div class="grid">
+      <div class="full">
+        <label class="field-label">المباراة</label>
+        <select class="field" id="dealMatch" onchange="onDealMatchChange()"></select>
+      </div>
+      <div>
+        <label class="field-label">الفريق المستعير</label>
+        <select class="field" id="dealTeam" onchange="refreshPlayerOptions()"></select>
+      </div>
+      <div class="full">
+        <label class="field-label">اللاعب</label>
+        <select class="field" id="dealPlayer"></select>
+      </div>
+      <div class="full">
+        <label class="field-label">المبلغ (دراية)</label>
+        <input class="field" type="number" id="dealAmount" min="1" step="1" inputmode="numeric" placeholder="مثلًا 150"/>
+      </div>
+    </div>
+    <div class="deal-form-actions">
+      <button class="btn primary" style="flex:1;font-size:13px;" id="dealSaveBtn" onclick="onSaveDeal()">إضافة التعاقد</button>
+      <button class="btn" style="display:none;font-size:13px;" id="dealCancelBtn" onclick="cancelEdit()">إلغاء التعديل</button>
+    </div>
+    <div class="deal-note">المباريات اللي نتيجتها معتمدة ما تظهر هنا — لازم "تراجع عن النتيجة" أولًا.</div>
+  </div>
+  <div id="dealsList"></div>
+
+  <h2 class="sec-title" style="margin-top:22px;">طلبات الكباتن</h2>
   <p style="font-size:12px;color:var(--text2);margin-bottom:14px;">
     الكباتن يسجّلون هنا الصفقات بعد الاتفاق مع اللاعب خارج التطبيق. راجع كل صفقة واعتمدها أو ارفضها —
     لو فريقين سجّلوا نفس اللاعب لنفس المباراة، اعتماد أحدهما يرفض الآخر تلقائيًا.
@@ -40,6 +80,12 @@
 <script>
 const CLAIM_STATUS_LABEL = { pending: "بانتظار الموافقة", approved: "معتمدة", rejected: "مرفوضة" };
 let teamsById = {}, playersById = {}, matchesById = {};
+let allPlayers = [];
+let loansCache = [];
+let editingLoanId = null;
+const LOCKED_STATUSES = ["completed", "cancelled"];
+const isLocked = (m) => !m || LOCKED_STATUSES.includes(m.status);
+const matchLabel = (m) => `الأسبوع ${m.week ? m.week.week_number : '?'} · ${m.team_a ? m.team_a.name : ''} × ${m.team_b ? m.team_b.name : ''}`;
 
 async function loadClaims(){
   const { data, error } = await sb.from("loan_claims_public").select("*").order("created_at", { ascending: false });
@@ -75,9 +121,128 @@ function renderClaims(claims){
   }).join("") || `<div class="empty-state">لا توجد صفقات مسجَّلة بعد</div>`;
 }
 
+function renderDeals(){
+  document.getElementById("dealsList").innerHTML = loansCache.map(l => {
+    const m = matchesById[l.match_id];
+    const player = playersById[l.player_id];
+    const locked = isLocked(m);
+    return `
+      <div class="deal-card glass ${locked ? 'locked' : ''}">
+        <div class="claim-head">
+          <span>${player ? player.full_name : ''}</span>
+          <span style="color:var(--gold-deep);">${l.winning_bid_amount} دراية</span>
+        </div>
+        <div class="claim-meta">
+          ${m ? matchLabel(m) : ''}<br/>
+          من ${teamsById[l.original_team_id] ? teamsById[l.original_team_id].name : ''}
+          إلى ${teamsById[l.borrowing_team_id] ? teamsById[l.borrowing_team_id].name : ''}
+        </div>
+        ${locked
+          ? `<div class="deal-note">🔒 نتيجة هذي المباراة معتمدة — تراجع عنها أولًا لتعدّل التعاقد</div>`
+          : `<div class="deal-actions">
+               <button class="btn" style="flex:1;font-size:12px;" onclick="startEdit('${l.id}')">تعديل</button>
+               <button class="btn" style="flex:1;font-size:12px;color:var(--red);" onclick="onDeleteDeal('${l.id}')">حذف</button>
+             </div>`}
+      </div>`;
+  }).join("") || `<div class="empty-state">لا توجد تعاقدات بعد</div>`;
+}
+
+function fillMatchOptions(selectedId){
+  const sel = document.getElementById("dealMatch");
+  const open = Object.values(matchesById).filter(m => !isLocked(m));
+  sel.innerHTML = open.map(m => `<option value="${m.id}">${matchLabel(m)}</option>`).join("")
+    || `<option value="">لا توجد مباريات مفتوحة</option>`;
+  if(selectedId) sel.value = selectedId;
+  onDealMatchChange();
+}
+
+function onDealMatchChange(selectedTeamId){
+  const m = matchesById[document.getElementById("dealMatch").value];
+  const teamSel = document.getElementById("dealTeam");
+  teamSel.innerHTML = m
+    ? [m.team_a_id, m.team_b_id].map(id => `<option value="${id}">${teamsById[id] ? teamsById[id].name : ''}</option>`).join("")
+    : "";
+  if(selectedTeamId) teamSel.value = selectedTeamId;
+  refreshPlayerOptions();
+}
+
+function refreshPlayerOptions(selectedPlayerId){
+  const teamId = document.getElementById("dealTeam").value;
+  const m = matchesById[document.getElementById("dealMatch").value];
+  const taken = new Set(loansCache
+    .filter(l => m && l.match_id === m.id && l.id !== editingLoanId)
+    .map(l => l.player_id));
+  const sel = document.getElementById("dealPlayer");
+  sel.innerHTML = allPlayers
+    .filter(p => p.original_team_id !== teamId && !taken.has(p.id))
+    .map(p => `<option value="${p.id}">${p.full_name} — ${teamsById[p.original_team_id] ? teamsById[p.original_team_id].name : ''}</option>`)
+    .join("");
+  if(selectedPlayerId) sel.value = selectedPlayerId;
+}
+
+function resetForm(){
+  editingLoanId = null;
+  document.getElementById("dealFormTitle").textContent = "إضافة تعاقد مباشر";
+  document.getElementById("dealSaveBtn").textContent = "إضافة التعاقد";
+  document.getElementById("dealCancelBtn").style.display = "none";
+  document.getElementById("dealMatch").disabled = false;
+  document.getElementById("dealAmount").value = "";
+  fillMatchOptions();
+}
+
+function startEdit(loanId){
+  const l = loansCache.find(x => x.id === loanId);
+  if(!l) return;
+  editingLoanId = loanId;
+  document.getElementById("dealFormTitle").textContent = "تعديل التعاقد";
+  document.getElementById("dealSaveBtn").textContent = "حفظ التعديل";
+  document.getElementById("dealCancelBtn").style.display = "";
+  fillMatchOptions(l.match_id);
+  document.getElementById("dealMatch").disabled = true; // المباراة ثابتة؛ لو غلط احذف وأضف من جديد
+  onDealMatchChange(l.borrowing_team_id);
+  refreshPlayerOptions(l.player_id);
+  document.getElementById("dealAmount").value = l.winning_bid_amount;
+  document.getElementById("dealForm").scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+function cancelEdit(){ resetForm(); }
+
+async function onSaveDeal(){
+  const matchId = document.getElementById("dealMatch").value;
+  const teamId = document.getElementById("dealTeam").value;
+  const playerId = document.getElementById("dealPlayer").value;
+  const amount = parseInt(document.getElementById("dealAmount").value, 10);
+  if(!matchId || !teamId || !playerId){ showToast("اكمل بيانات التعاقد", "error"); return; }
+  if(!amount || amount <= 0){ showToast("اكتب مبلغ صحيح", "error"); return; }
+  const btn = document.getElementById("dealSaveBtn");
+  btn.disabled = true;
+  try{
+    if(editingLoanId){
+      await adminUpdateLoan(editingLoanId, playerId, teamId, amount);
+      showToast("تم تعديل التعاقد", "success");
+    } else {
+      await adminCreateLoan(matchId, playerId, teamId, amount);
+      showToast("تمت إضافة التعاقد", "success");
+    }
+    resetForm();
+    await reload();
+  }catch(err){ showToast(err.message, "error"); }
+  finally{ btn.disabled = false; }
+}
+
+async function onDeleteDeal(loanId){
+  if(!confirm("حذف هذا التعاقد؟ يُشال اللاعب من تشكيلة الفريق المستعير لو كان مسجَّلًا.")) return;
+  try{ await adminDeleteLoan(loanId); showToast("تم حذف التعاقد", "success"); if(editingLoanId === loanId) resetForm(); await reload(); }
+  catch(err){ showToast(err.message, "error"); }
+}
+
 async function reload(){
-  const claims = await loadClaims();
+  const [claims, loansRes] = await Promise.all([loadClaims(), sb.from("match_loans").select("*").order("created_at", { ascending: false })]);
+  if(loansRes.error) throw loansRes.error;
+  loansCache = loansRes.data;
   renderClaims(claims);
+  renderDeals();
+  if(!editingLoanId) refreshPlayerOptions();
 }
 
 async function onApprove(claimId){
@@ -98,7 +263,9 @@ async function onReject(claimId){
   teamsById = Object.fromEntries(teams.map(t => [t.id, t]));
   playersById = Object.fromEntries(players.map(p => [p.id, p]));
   matchesById = Object.fromEntries(matches.map(m => [m.id, m]));
+  allPlayers = players.filter(p => p.is_active !== false);
 
+  fillMatchOptions();
   await reload();
 })();
 </script>

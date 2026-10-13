@@ -49,3 +49,25 @@ async function listLoansForMatch(matchId){
   if(error) throw error;
   return data;
 }
+
+// تحكم الإدارة الكامل — كلها ممنوعة على مباراة نتيجتها معتمدة (لازم "تراجع عن النتيجة" أولًا)
+async function adminCreateLoan(matchId, playerId, borrowingTeamId, amount){
+  const { data, error } = await sb.rpc("admin_create_loan", {
+    p_match_id: matchId, p_player_id: playerId, p_borrowing_team_id: borrowingTeamId, p_amount: amount,
+  });
+  if(error) throw error;
+  return data;
+}
+
+async function adminUpdateLoan(loanId, playerId, borrowingTeamId, amount){
+  const { data, error } = await sb.rpc("admin_update_loan", {
+    p_loan_id: loanId, p_player_id: playerId, p_borrowing_team_id: borrowingTeamId, p_amount: amount,
+  });
+  if(error) throw error;
+  return data;
+}
+
+async function adminDeleteLoan(loanId){
+  const { error } = await sb.rpc("admin_delete_loan", { p_loan_id: loanId });
+  if(error) throw error;
+}

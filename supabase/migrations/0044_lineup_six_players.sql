@@ -1,6 +1,6 @@
 -- دوري دراية: التشكيلة 6 لاعبين بالضبط
 -- ============================================================
--- • الكابتن/الإدارة ما يقدرون يحفظون تشكيلة فيها أكثر من 6 (تقدر تحفظ أقل وتكمّلها بعدين).
+-- • التشكيلة 6 لاعبين بالضبط: ما تنحفظ بأقل ولا بأكثر (كابتن أو إدارة).
 -- • الكابتن ما يثبّت مبلغ المباراة إلا لو تشكيلة فريقه 6 بالضبط.
 -- يستبدل set_lineup (0007) و set_match_stake (0042/0043) بنفس التواقيع، فيصلح اللصق بأي ترتيب.
 -- ============================================================
@@ -17,8 +17,8 @@ begin
     raise exception 'forbidden: not this team''s captain';
   end if;
 
-  if coalesce(array_length(p_player_ids, 1), 0) > 6 then
-    raise exception 'التشكيلة 6 لاعبين كحد أقصى';
+  if coalesce(array_length(p_player_ids, 1), 0) <> 6 then
+    raise exception 'التشكيلة لازم تكون 6 لاعبين بالضبط (اخترت %)', coalesce(array_length(p_player_ids, 1), 0);
   end if;
 
   delete from match_lineups where match_id = p_match_id and team_id = p_team_id;

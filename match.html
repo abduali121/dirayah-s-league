@@ -169,7 +169,7 @@ function toggleLineupEdit(teamId){
 async function onSaveLineup(teamId){
   const el = document.getElementById(`lineup-edit-${teamId}`);
   const ids = [...el.querySelectorAll('input[type="checkbox"]:checked')].map(cb => cb.value);
-  if(ids.length > LINEUP_SIZE){ showToast(`التشكيلة ${LINEUP_SIZE} لاعبين كحد أقصى (اخترت ${ids.length})`, "error"); return; }
+  if(ids.length !== LINEUP_SIZE){ showToast(`التشكيلة لازم ${LINEUP_SIZE} لاعبين بالضبط (اخترت ${ids.length})`, "error"); return; }
   try{
     await setLineup(matchId, teamId, ids);
     showToast("تم حفظ التشكيلة", "success");

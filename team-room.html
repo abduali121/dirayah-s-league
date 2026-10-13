@@ -308,6 +308,7 @@ async function renderLineup(matchId){
           ${p.full_name}${p.original_team_id !== teamId ? '<span class="loan-tag">مُعار</span>' : ''}
         </label>
       `).join("") || '<div class="empty-state" style="padding:10px;">لا يوجد لاعبون مؤهّلون</div>'}
+      <div style="font-size:11px;color:var(--text2);margin-top:6px;">اختر 6 لاعبين بالضبط</div>
       <button class="btn primary block" style="margin-top:8px;font-size:12px;" onclick="onSaveLineup()">حفظ التشكيلة</button>
     </div>
   `;
@@ -322,6 +323,7 @@ async function onSaveLineup(){
   const wrap = document.getElementById("lineupWrap");
   const matchId = wrap.dataset.matchId;
   const ids = [...document.getElementById("lineupEditBox").querySelectorAll('input[type="checkbox"]:checked')].map(cb => cb.value);
+  if(ids.length !== 6){ showToast(`التشكيلة لازم 6 لاعبين بالضبط (اخترت ${ids.length})`, "error"); return; }
   try{
     await setLineup(matchId, teamId, ids);
     showToast("تم حفظ التشكيلة", "success");

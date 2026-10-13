@@ -83,6 +83,7 @@
 <script>
 const matchId = new URLSearchParams(window.location.search).get("id");
 let profile, match, playersById = {}, teamsById = {};
+const LINEUP_SIZE = 6; // نفس الرقم المفروض بالسيرفر (set_lineup / set_match_stake)
 let stakeDone = []; // الفرق اللي ثبّتت مبلغها (المبلغ نفسه مخفي لين يثبّت الاثنين)
 
 const STATUS_LABEL = { scheduled: "مجدولة", live: "جارية الآن", awaiting_result: "بانتظار النتيجة", completed: "مُعتمدة", cancelled: "ملغاة" };
@@ -150,6 +151,7 @@ async function renderLineups(loans){
             ${p.full_name}${p.original_team_id !== teamId ? '<span class="loan-tag">مُعار</span>' : ''}
           </label>
         `).join("") || '<div class="empty-state" style="padding:10px;">لا يوجد لاعبون مؤهّلون</div>'}
+        <div style="font-size:11px;color:var(--text2);margin-top:6px;">اختر ${LINEUP_SIZE} لاعبين بالضبط</div>
         <button class="btn primary block" style="margin-top:8px;font-size:12px;" onclick="onSaveLineup('${teamId}')">حفظ التشكيلة</button>
       </div>
     ` : "";
@@ -167,6 +169,7 @@ function toggleLineupEdit(teamId){
 async function onSaveLineup(teamId){
   const el = document.getElementById(`lineup-edit-${teamId}`);
   const ids = [...el.querySelectorAll('input[type="checkbox"]:checked')].map(cb => cb.value);
+  if(ids.length > LINEUP_SIZE){ showToast(`التشكيلة ${LINEUP_SIZE} لاعبين كحد أقصى (اخترت ${ids.length})`, "error"); return; }
   try{
     await setLineup(matchId, teamId, ids);
     showToast("تم حفظ التشكيلة", "success");
@@ -193,14 +196,14 @@ async function renderStakeForm(loans){
 
   const floor = loans.filter(l => l.borrowing_team_id === myTeam).reduce((sum, l) => sum + l.winning_bid_amount, 0);
   const balance = teamsById[myTeam].balance_daraya;
-  // لازم يدخل تشكيلة فريقه أولًا قبل ما يثبّت المبلغ
+  // لازم تشكيلة فريقه 6 لاعبين بالضبط قبل ما يثبّت المبلغ
   const { count: lineupCount } = await sb.from("match_lineups").select("id", { count: "exact", head: true })
     .eq("match_id", matchId).eq("team_id", myTeam);
-  if(!lineupCount){
+  if(lineupCount !== LINEUP_SIZE){
     wrap.innerHTML = `
       <div class="card glass" style="text-align:center;font-size:13px;line-height:1.8;">
         <b>🎯 مبلغ تحدّي فريقك</b><br/>
-        <span style="color:var(--text2);">ادخل تشكيلة فريقك أولًا (زر "تعديل التشكيلة" تحت)، بعدها تقدر تثبّت مبلغك.</span>
+        <span style="color:var(--text2);">لازم تدخل تشكيلة من ${LINEUP_SIZE} لاعبين بالضبط (الحالي: ${lineupCount || 0}) — زر "تعديل التشكيلة" تحت — وبعدها تقدر تثبّت مبلغك.</span>
       </div>`;
     return;
   }

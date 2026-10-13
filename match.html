@@ -17,6 +17,7 @@
   .vs-team .name{ font-weight:800;font-size:14px; }
   .vs-team .bal{ font-size:12px;color:var(--text2);margin-top:2px; }
   .vs-mid{ font-size:12px;color:var(--text2);font-weight:800; }
+  .stake-badge.pending{ background:var(--surface2);color:var(--text2); }
   .stake-badge{ display:inline-block;margin-top:8px;background:var(--gold-light);color:var(--gold);font-weight:800;font-size:12px;padding:5px 14px;border-radius:999px; }
   .section-title{ font-size:13px;font-weight:800;color:var(--text2);margin:18px 0 8px; }
   .lineup-grid{ display:grid;grid-template-columns:1fr 1fr;gap:10px; }
@@ -51,6 +52,8 @@
 <main class="container">
   <div id="matchHero" class="card glass match-hero"></div>
 
+  <div id="stakeFormWrap"></div>
+
   <div id="predictionWrap"></div>
 
   <div class="section-title">التشكيلات</div>
@@ -80,6 +83,7 @@
 <script>
 const matchId = new URLSearchParams(window.location.search).get("id");
 let profile, match, playersById = {}, teamsById = {};
+let stakeDone = []; // الفرق اللي ثبّتت مبلغها (المبلغ نفسه مخفي لين يثبّت الاثنين)
 
 const STATUS_LABEL = { scheduled: "مجدولة", live: "جارية الآن", awaiting_result: "بانتظار النتيجة", completed: "مُعتمدة", cancelled: "ملغاة" };
 const CLAIM_STATUS_LABEL = { pending: "بانتظار موافقة المدير", approved: "معتمدة ✓", rejected: "مرفوضة" };
@@ -99,9 +103,14 @@ function renderHero(){
       <div class="vs-mid">VS</div>
       <div class="vs-team"><div class="logo" style="background:${m.team_b.primary_color}">${teamInitial(m.team_b)}</div><div class="name">${m.team_b.name}</div><div class="bal">${m.status==='completed' ? `${m.team_b_balance_before} ← ${m.team_b_balance_after}` : m.team_b.balance_daraya + ' د'}</div></div>
     </div>
-    <div style="display:flex;gap:8px;justify-content:center;">
-      <span class="stake-badge">${m.team_a.name} يدخل بـ${m.team_a_stake}</span>
-      <span class="stake-badge">${m.team_b.name} يدخل بـ${m.team_b_stake}</span>
+    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+      ${m.team_a_stake != null && m.team_b_stake != null
+        ? `<span class="stake-badge">${m.team_a.name} يدخل بـ${m.team_a_stake}</span>
+           <span class="stake-badge">${m.team_b.name} يدخل بـ${m.team_b_stake}</span>`
+        : [m.team_a, m.team_b].map((t, i) => {
+            const id = i === 0 ? m.team_a_id : m.team_b_id;
+            return `<span class="stake-badge pending">${t.name} ${stakeDone.includes(id) ? '✓ ثبّت مبلغه' : '⏳ ينتظر'}</span>`;
+          }).join("")}
     </div>
     ${m.status === 'completed' ? `<div style="margin-top:10px;font-weight:800;color:var(--gold);">🏆 فاز ${m.winner_team_id === m.team_a_id ? m.team_a.name : m.team_b.name}</div>` : ''}
   `;
@@ -172,6 +181,43 @@ function renderLoans(loans){
       <span style="color:var(--text2);font-size:12px;">${l.original.name} ⇠ ${l.borrower.name}</span>
     </div>
   `).join("") : `<div class="empty-state">لا يوجد لاعبون مُعارون في هذه المباراة</div>`;
+}
+
+// الكابتن يثبّت مبلغ تحدّي فريقه: أدنى حد = مجموع تعاقداته بهذي المباراة، وأعلى حد = رصيده كله
+async function renderStakeForm(loans){
+  const wrap = document.getElementById("stakeFormWrap");
+  const myTeam = profile && profile.team_id;
+  const isMine = myTeam && (myTeam === match.team_a_id || myTeam === match.team_b_id);
+  const ownStake = myTeam === match.team_a_id ? match.team_a_stake : match.team_b_stake;
+  if(!isMine || match.status !== "scheduled" || ownStake != null){ wrap.innerHTML = ""; return; }
+
+  const floor = loans.filter(l => l.borrowing_team_id === myTeam).reduce((sum, l) => sum + l.winning_bid_amount, 0);
+  const balance = teamsById[myTeam].balance_daraya;
+  let current = null;
+  try{ current = await getMyStakeOffer(matchId, myTeam); }catch(err){ /* ما فيه مبلغ مثبّت */ }
+
+  wrap.innerHTML = `
+    <div class="card glass">
+      <h4 style="font-size:13px;margin-bottom:6px;">🎯 مبلغ تحدّي فريقك</h4>
+      <div style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:10px;">
+        مبلغك يبقى سريًا لين يثبّت الكابتنان، وبعدها ينكشف الرقمان معًا.<br/>
+        الحد الأدنى <b>${floor}</b> (مجموع تعاقداتك بهذي المباراة) · الأعلى <b>${balance}</b> (رصيد فريقك)
+        ${current != null ? `<br/>مبلغك المثبّت حاليًا: <b>${current}</b> — تقدر تغيّره قبل ما يثبّت الخصم.` : ''}
+      </div>
+      <form id="stakeForm" style="display:flex;gap:8px;">
+        <input class="field" type="number" id="s_amount" min="${Math.max(floor, 1)}" max="${balance}" value="${current ?? ''}" placeholder="مبلغك" required style="flex:1;"/>
+        <button class="btn primary" type="submit">${current != null ? 'تحديث' : 'تثبيت'}</button>
+      </form>
+    </div>
+  `;
+  document.getElementById("stakeForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    try{
+      const res = await setMatchStake(matchId, parseInt(document.getElementById("s_amount").value, 10));
+      showToast(res.revealed ? "ثبّت الكابتنان — انكشفت المبالغ!" : "تم تثبيت مبلغك، بانتظار الخصم", "success");
+      await loadAll();
+    }catch(err){ showToast(err.message, "error"); }
+  });
 }
 
 async function renderClaimForm(){
@@ -282,8 +328,10 @@ async function loadAll(){
   teamsById = Object.fromEntries(teams.map(t => [t.id, t]));
   playersById = Object.fromEntries(players.map(p => [p.id, p]));
   const loans = await listLoansForMatch(matchId);
+  try{ stakeDone = await listStakeStatus(matchId); }catch(err){ stakeDone = []; }
 
   renderHero();
+  await renderStakeForm(loans);
   await renderLineups(loans);
   renderLoans(loans);
   await renderPrediction();

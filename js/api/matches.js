@@ -26,7 +26,7 @@ async function getMatch(matchId){
 async function createMatch({ week_id, team_a_id, team_b_id, team_a_stake, team_b_stake }){
   const { data, error } = await sb.rpc("create_match", {
     p_week_id: week_id, p_team_a_id: team_a_id, p_team_b_id: team_b_id,
-    p_team_a_stake: team_a_stake, p_team_b_stake: team_b_stake,
+    p_team_a_stake: team_a_stake ?? null, p_team_b_stake: team_b_stake ?? null,
   });
   if(error) throw error;
   return data;
@@ -35,7 +35,7 @@ async function createMatch({ week_id, team_a_id, team_b_id, team_a_stake, team_b
 async function editMatch(matchId, { team_a_id, team_b_id, team_a_stake, team_b_stake }){
   const { data, error } = await sb.rpc("edit_match", {
     p_match_id: matchId, p_team_a_id: team_a_id, p_team_b_id: team_b_id,
-    p_team_a_stake: team_a_stake, p_team_b_stake: team_b_stake,
+    p_team_a_stake: team_a_stake ?? null, p_team_b_stake: team_b_stake ?? null,
   });
   if(error) throw error;
   return data;
@@ -112,4 +112,24 @@ async function listMatchEvents(matchId){
     .order("created_at");
   if(error) throw error;
   return data;
+}
+
+// مبلغ التحدّي يحطه كل كابتن بنفسه ويبقى سريًا لين يثبّت الفريقان (match_stake_offers تخفيه بـ RLS)
+async function setMatchStake(matchId, amount){
+  const { data, error } = await sb.rpc("set_match_stake", { p_match_id: matchId, p_amount: amount });
+  if(error) throw error;
+  return data;
+}
+
+async function getMyStakeOffer(matchId, teamId){
+  const { data, error } = await sb.from("match_stake_offers").select("amount").eq("match_id", matchId).eq("team_id", teamId).maybeSingle();
+  if(error) throw error;
+  return data ? data.amount : null;
+}
+
+// أي فريق ثبّت مبلغه (بدون المبلغ نفسه)
+async function listStakeStatus(matchId){
+  const { data, error } = await sb.from("match_stake_status").select("team_id").eq("match_id", matchId);
+  if(error) throw error;
+  return data.map(r => r.team_id);
 }

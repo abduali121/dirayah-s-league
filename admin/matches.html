@@ -31,10 +31,7 @@
         <select class="field" id="nm_a" required></select>
         <select class="field" id="nm_b" required></select>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
-        <input class="field" type="number" id="nm_sa" placeholder="مداخلة الفريق الأول" required min="1"/>
-        <input class="field" type="number" id="nm_sb" placeholder="مداخلة الفريق الثاني" required min="1"/>
-      </div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:10px;">المبالغ يحطها كابتن كل فريق بنفسه من صفحة المباراة.</div>
       <button class="btn primary block" type="submit">إنشاء المباراة</button>
     </form>
   </div>
@@ -52,6 +49,7 @@
 <script src="../js/api/matches.js"></script>
 <script>
 let teamsCache = [], weeksCache = [], matchesCache = [];
+let stakeOffers = {}; // match_id -> [team_id اللي ثبّتوا]
 
 // كل قائمة تستبعد الفريق المختار حاليًا في القائمة الثانية، حتى ما يصير فريق ضد نفسه
 function teamOptions(selectedId, excludeId){
@@ -74,6 +72,14 @@ function wireMutualExclusion(aId, bId){
   });
 }
 
+const stakesReady = (m) => m.team_a_stake != null && m.team_b_stake != null;
+// الإدارة تشوف مين ثبّت مبلغه (بدون الرقم) — عرض فقط
+function stakeStatusText(m){
+  const done = stakeOffers[m.id] || [];
+  const mark = (id, name) => `${name} ${done.includes(id) ? '✓' : '…'}`;
+  return ` (${mark(m.team_a_id, m.team_a.name)} · ${mark(m.team_b_id, m.team_b.name)})`;
+}
+
 function matchCard(m){
   if(m.status === "completed"){
     return `
@@ -88,10 +94,12 @@ function matchCard(m){
   return `
     <div class="match-card glass">
       <div class="match-summary"><span>${m.team_a.name}</span><span>مقابل</span><span>${m.team_b.name}</span></div>
-      <div style="font-size:12px;color:var(--text2);margin-bottom:10px;">${m.team_a.name} يدخل بـ${m.team_a_stake} · ${m.team_b.name} يدخل بـ${m.team_b_stake}</div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:10px;">${stakesReady(m)
+        ? `${m.team_a.name} يدخل بـ${m.team_a_stake} · ${m.team_b.name} يدخل بـ${m.team_b_stake}`
+        : `⏳ بانتظار الكباتن يثبّتون مبالغهم${stakeStatusText(m)}`}</div>
       <div class="actions-row">
-        <button class="btn primary" id="confirm-${m.id}" style="font-size:12px;">اعتماد نتيجة: فوز ${m.team_a.name}</button>
-        <button class="btn" style="font-size:12px;" onclick="pickWinner('${m.id}','${m.team_b_id}')">اعتماد نتيجة: فوز ${m.team_b.name}</button>
+        <button class="btn primary" id="confirm-${m.id}" style="font-size:12px;" ${stakesReady(m) ? '' : 'disabled'}>اعتماد نتيجة: فوز ${m.team_a.name}</button>
+        <button class="btn" style="font-size:12px;" ${stakesReady(m) ? '' : 'disabled'} onclick="pickWinner('${m.id}','${m.team_b_id}')">اعتماد نتيجة: فوز ${m.team_b.name}</button>
         <button class="btn" style="font-size:12px;" onclick="toggleMatchEdit('${m.id}')">تعديل المباراة</button>
         <button class="btn" style="font-size:12px;color:var(--red);" onclick="onDeleteMatch('${m.id}')">حذف المباراة</button>
       </div>
@@ -101,8 +109,8 @@ function matchCard(m){
           <select class="field" id="eb-${m.id}" required>${teamOptions(m.team_b_id, m.team_a_id)}</select>
         </div>
         <div class="row-2" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
-          <input class="field" type="number" id="esa-${m.id}" value="${m.team_a_stake}" placeholder="مداخلة الفريق الأول" required min="1"/>
-          <input class="field" type="number" id="esb-${m.id}" value="${m.team_b_stake}" placeholder="مداخلة الفريق الثاني" required min="1"/>
+          <input class="field" type="number" id="esa-${m.id}" value="${m.team_a_stake ?? ''}" placeholder="مبلغ الفريق الأول (اتركه فاضي = الكابتن يحط)" min="1"/>
+          <input class="field" type="number" id="esb-${m.id}" value="${m.team_b_stake ?? ''}" placeholder="مبلغ الفريق الثاني (اتركه فاضي = الكابتن يحط)" min="1"/>
         </div>
         <button class="btn primary block" type="submit" style="font-size:13px;">حفظ التعديل</button>
       </form>
@@ -167,8 +175,8 @@ async function onEditMatch(e, m){
     await editMatch(m.id, {
       team_a_id: document.getElementById(`ea-${m.id}`).value,
       team_b_id: document.getElementById(`eb-${m.id}`).value,
-      team_a_stake: parseInt(document.getElementById(`esa-${m.id}`).value, 10),
-      team_b_stake: parseInt(document.getElementById(`esb-${m.id}`).value, 10),
+      team_a_stake: parseInt(document.getElementById(`esa-${m.id}`).value, 10) || null,
+      team_b_stake: parseInt(document.getElementById(`esb-${m.id}`).value, 10) || null,
     });
     showToast("تم حفظ تعديل المباراة", "success");
     await reload();
@@ -213,6 +221,11 @@ async function onUndo(m){
 
 async function reload(){
   matchesCache = await listMatches();
+  stakeOffers = {};
+  try{
+    const { data } = await sb.from("match_stake_offers").select("match_id, team_id");
+    (data || []).forEach(r => (stakeOffers[r.match_id] = stakeOffers[r.match_id] || []).push(r.team_id));
+  }catch(err){ /* الجدول ما انضاف بعد — العرض يشتغل بدونه */ }
   renderWeeks();
 }
 
@@ -236,8 +249,6 @@ async function reload(){
         week_id: document.getElementById("nm_week").value,
         team_a_id: document.getElementById("nm_a").value,
         team_b_id: document.getElementById("nm_b").value,
-        team_a_stake: parseInt(document.getElementById("nm_sa").value, 10),
-        team_b_stake: parseInt(document.getElementById("nm_sb").value, 10),
       });
       showToast("تم إنشاء المباراة", "success");
       e.target.reset();

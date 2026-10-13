@@ -360,7 +360,9 @@ function matchCard(m, i){
       </div>
       ${isDone
         ? `<div class="mc-result">الفائز: ${m.winner?.name || ''}</div>`
-        : `<div class="mc-stakes"><span class="mc-stake">يدخل بـ ${m.team_a_stake}</span><span class="mc-stake">يدخل بـ ${m.team_b_stake}</span></div>`}
+        : (m.team_a_stake != null && m.team_b_stake != null
+            ? `<div class="mc-stakes"><span class="mc-stake">يدخل بـ ${m.team_a_stake}</span><span class="mc-stake">يدخل بـ ${m.team_b_stake}</span></div>`
+            : `<div class="mc-stakes" style="justify-content:center;"><span class="mc-stake">⏳ المبالغ بانتظار الكباتن</span></div>`)}
       <span class="mc-cta"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></span>
     </a>
   `;

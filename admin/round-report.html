@@ -75,7 +75,10 @@
   .t-crest{ width:58px;height:58px;border-radius:16px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:28px;color:#fff;overflow:hidden; }
   .t-crest img{ width:100%;height:100%;object-fit:cover;display:block; }
   .t-name{ font-weight:900;font-size:33px;flex:1;min-width:0; }
-  .t-wins{ background:var(--navy);color:#fff;font-weight:800;font-size:24px;border-radius:999px;padding:5px 18px;margin-inline-start:12px;white-space:nowrap; }
+  .t-form{ display:flex;gap:9px;align-items:center;flex-shrink:0; }
+  .t-form .dot{ width:26px;height:26px;border-radius:50%;display:block; }
+  .t-form .dot.w{ background:var(--up); }
+  .t-form .dot.l{ background:var(--down); }
   .t-move{ font-weight:800;font-size:24px;min-width:70px;text-align:center; }
   .t-move.up{ color:var(--up); } .t-move.down{ color:var(--down); } .t-move.flat{ color:#aab6c6; }
   .t-bal{ font-family:'Thmanyah','Tajawal',serif;font-weight:900;font-size:40px;color:var(--navy);min-width:150px;text-align:left; }
@@ -148,16 +151,19 @@ async function fetchRoundData(week){
 function computeStandings(data){
   const sum = (rows) => rows.reduce((acc, r) => (acc[r.team_id] = (acc[r.team_id] || 0) + r.delta, acc), {});
   const later = sum(data.laterLedger), inRound = sum(data.roundLedger);
-  // عدد مرات الفوز لين نهاية هذي الجولة
-  const wins = {};
-  allMatches.forEach(m => {
-    if(m.status !== "completed" || !m.winner_team_id) return;
-    if(data.lastAt && m.confirmed_at && m.confirmed_at > data.lastAt) return;
-    wins[m.winner_team_id] = (wins[m.winner_team_id] || 0) + 1;
-  });
+  // نتائج كل فريق (فوز/خسارة) بترتيب اللعب لين نهاية هذي الجولة — تظهر دوائر ملوّنة
+  const form = {};
+  [...allMatches]
+    .filter(m => m.status === "completed" && m.winner_team_id && !(data.lastAt && m.confirmed_at && m.confirmed_at > data.lastAt))
+    .sort((x, y) => String(x.confirmed_at).localeCompare(String(y.confirmed_at)))
+    .forEach(m => {
+      const loserId = m.winner_team_id === m.team_a_id ? m.team_b_id : m.team_a_id;
+      (form[m.winner_team_id] = form[m.winner_team_id] || []).push("w");
+      (form[loserId] = form[loserId] || []).push("l");
+    });
   const rows = Object.values(teamsById).map(t => {
     const after = t.balance_daraya - (later[t.id] || 0);
-    return { team: t, after, before: after - (inRound[t.id] || 0), wins: wins[t.id] || 0 };
+    return { team: t, after, before: after - (inRound[t.id] || 0), form: (form[t.id] || []).slice(-6) };
   });
   const rank = (key) => {
     const sorted = [...rows].sort((a, b) => b[key] - a[key] || a.team.name.localeCompare(b.team.name, "ar"));
@@ -228,7 +234,8 @@ function reportHtml(week, data){
       <div class="t-row ${r.rankAfter === 1 ? 'first' : ''}">
         <div class="t-rank">${r.rankAfter}</div>
         ${crest(r.team, "t-crest")}
-        <div class="t-name">${esc(r.team.name)}<span class="t-wins">ف ${r.wins}</span></div>
+        <div class="t-name">${esc(r.team.name)}</div>
+        <div class="t-form">${r.form.map(x => `<span class="dot ${x}"></span>`).join("")}</div>
         <div class="t-move ${move > 0 ? 'up' : move < 0 ? 'down' : 'flat'}">${move > 0 ? '▲ ' + move : move < 0 ? '▼ ' + Math.abs(move) : '—'}</div>
         <div class="t-bal">${nf(r.after)}</div>
       </div>`;

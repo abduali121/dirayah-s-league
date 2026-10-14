@@ -96,6 +96,18 @@
   .lu-tag{ font-size:16px;font-weight:800;background:var(--gold);color:#241b00;border-radius:999px;padding:2px 11px;white-space:nowrap; }
   .lu-none{ color:var(--mute);font-size:22px;padding:10px 0; }
 
+  /* نتائج موجزة: سطر لكل مباراة */
+  .r-row{ display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:14px 20px;margin-bottom:10px; }
+  .r-side{ display:flex;align-items:center;gap:12px;flex:1;min-width:0; }
+  .r-side b{ font-size:28px;font-weight:800; }
+  .r-side.lose{ opacity:.8;justify-content:flex-end;flex-direction:row-reverse; }
+  .r-crest{ width:52px;height:52px;border-radius:14px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:24px;color:#fff;overflow:hidden; }
+  .r-crest img{ width:100%;height:100%;object-fit:cover;display:block; }
+  .r-side.win .r-crest{ box-shadow:0 0 0 3px var(--gold); }
+  .r-side .d{ font-weight:800;font-size:22px; }
+  .r-side .d.up{ color:var(--up); } .r-side .d.down{ color:var(--down); }
+  .r-x{ color:var(--mute);font-size:20px;font-weight:700;flex-shrink:0; }
+  .r-pending{ color:var(--mute);font-size:20px; }
   .rp-foot{ margin-top:4px;padding-top:18px;border-top:2px solid var(--line);display:flex;justify-content:space-between;color:var(--mute);font-size:20px; }
   .rp-foot b{ color:var(--gold);font-weight:800; }
 </style>
@@ -189,48 +201,22 @@ function reportHtml(week, data){
     { v: done.length + (matches.length > done.length ? `/${matches.length}` : ""), l: "مباريات" },
     { v: nf(totalStake), l: "دراية دخلت التحدّي" },
     { v: loans.length, l: "تعاقدات" },
-    { v: topDeal ? nf(topDeal.winning_bid_amount) : "—", l: "أعلى صفقة" },
+    { v: topDeal ? nf(topDeal.winning_bid_amount) : "—", l: topDeal ? `أعلى صفقة · ${esc(playersById[topDeal.player_id]?.full_name)}` : "أعلى صفقة" },
   ];
 
-  const loanByKey = {};
-  loans.forEach(l => { loanByKey[`${l.match_id}|${l.player_id}|${l.borrowing_team_id}`] = l; });
-  const lineupCol = (m, teamId) => {
-    const rows = lineups.filter(x => x.match_id === m.id && x.team_id === teamId);
-    return `<div class="lu-col">${rows.length
-      ? rows.map(x => {
-          const loan = loanByKey[`${m.id}|${x.player_id}|${teamId}`];
-          return `<div class="p"><span>${esc(playersById[x.player_id]?.full_name)}</span>${loan ? `<span class="lu-tag">معار · ${nf(loan.winning_bid_amount)}</span>` : ''}</div>`;
-        }).join("")
-      : `<div class="lu-none">ما دخلت التشكيلة</div>`}</div>`;
-  };
-
   const matchesHtml = matches.map(m => {
-    const a = teamsById[m.team_a_id], b = teamsById[m.team_b_id];
     const isDone = m.status === "completed";
-    const side = (t, id, before, after) => `
-      <div class="m-team ${isDone ? (m.winner_team_id === id ? 'win' : 'lose') : ''}">
-        ${crest(t, "crest")}
-        <div class="tx"><div class="nm">${esc(t?.name)}</div>
-        ${isDone ? `<div class="bal">${nf(before)} ← <b>${nf(after)}</b></div>` : ""}</div>
-      </div>`;
-    return `
-      <div class="m-card">
-        <div class="m-row">
-          ${side(a, m.team_a_id, m.team_a_balance_before, m.team_a_balance_after)}
-          <div class="m-mid">
-            <div class="vs">VS</div>
-            ${isDone ? `<div class="m-win-tag">فاز ${esc(teamsById[m.winner_team_id]?.name)}</div>` : `<div class="m-win-tag" style="background:var(--navy2);color:var(--mute);">لم تُلعب بعد</div>`}
-          </div>
-          ${side(b, m.team_b_id, m.team_b_balance_before, m.team_b_balance_after)}
-        </div>
-        ${m.team_a_stake != null && m.team_b_stake != null ? `
-          <div class="m-stakes">
-            <span>${esc(a?.name)} دخل بـ <b>${nf(m.team_a_stake)}</b></span>
-            <span>${esc(b?.name)} دخل بـ <b>${nf(m.team_b_stake)}</b></span>
-          </div>` : ""}
-        ${lineups.some(x => x.match_id === m.id) ? `<div class="lu-label">التشكيلتان</div>
-        <div class="lu-grid">${lineupCol(m, m.team_a_id)}${lineupCol(m, m.team_b_id)}</div>` : ""}
-      </div>`;
+    if(!isDone){
+      return `<div class="r-row"><div class="r-side"><b>${esc(teamsById[m.team_a_id]?.name)}</b></div><div class="r-x">×</div><div class="r-side"><b>${esc(teamsById[m.team_b_id]?.name)}</b></div><div class="r-pending">لم تُلعب بعد</div></div>`;
+    }
+    const aWon = m.winner_team_id === m.team_a_id;
+    const w = { id: m.team_a_id, stake: m.team_a_stake };
+    const l = { id: m.team_b_id, stake: m.team_b_stake };
+    const [win, lose] = aWon ? [w, l] : [l, w];
+    // المداقش اللي كسبه الفائز / خسره الخاسر (التغيّر الصافي بعد رسوم الإعارة يظهر بجدول الترتيب)
+    const side = (x, cls, sign) => `<div class="r-side ${cls}">${crest(teamsById[x.id], "r-crest")}<b>${esc(teamsById[x.id]?.name)}</b>
+        ${x.stake != null ? `<span class="d ${sign > 0 ? 'up' : 'down'}">${sign > 0 ? '+' : '−'}${nf(x.stake)}</span>` : ""}</div>`;
+    return `<div class="r-row">${side(win, "win", 1)}<div class="r-x">فاز على</div>${side(lose, "lose", -1)}</div>`;
   }).join("");
 
   const standingsHtml = standings.map(r => {
@@ -247,19 +233,6 @@ function reportHtml(week, data){
       </div>`;
   }).join("");
 
-  const paidLoanIds = new Set(roundLedger.filter(r => r.reason === "loan_fee" && r.loan_id && r.delta < 0).map(r => r.loan_id));
-  const topLoans = [...loans].sort((x, y) => y.winning_bid_amount - x.winning_bid_amount).slice(0, 4);
-  const loansHtml = topLoans.length ? `<div class="l-grid">${topLoans.map(l => `
-      <div class="l-row">
-        <div>
-          <div class="l-player">${esc(playersById[l.player_id]?.full_name)}</div>
-          <div class="l-route">${esc(teamsById[l.original_team_id]?.name)} ← ${esc(teamsById[l.borrowing_team_id]?.name)}</div>
-        </div>
-        <div class="l-amt"><div class="n">${nf(l.winning_bid_amount)}</div>
-          ${paidLoanIds.has(l.id) ? `<div class="tg paid">دُفعت</div>` : `<div class="tg free">بدون رسوم</div>`}
-        </div>
-      </div>`).join("")}</div>` : `<div class="l-empty">ما فيه تعاقدات بهذي الجولة</div>`;
-
   return `
   <div class="rp" id="reportCard">
     <div class="rp-top">
@@ -274,9 +247,8 @@ function reportHtml(week, data){
 
     <div class="rp-kpis">${kpis.map(k => `<div class="rp-kpi"><div class="v">${k.v}</div><div class="l">${k.l}</div></div>`).join("")}</div>
 
-    <div class="rp-sec"><div class="rp-h">نتائج المباريات</div>${matchesHtml || '<div class="l-empty">ما فيه مباريات بهذي الجولة</div>'}</div>
-    <div class="rp-sec"><div class="rp-h">الترتيب بعد الجولة</div>${standingsHtml}</div>
-    <div class="rp-sec"><div class="rp-h">أعلى الصفقات</div>${loansHtml}</div>
+    <div class="rp-sec"><div class="rp-h">النتائج</div>${matchesHtml || '<div class="l-empty">ما فيه مباريات بهذي الجولة</div>'}</div>
+    <div class="rp-sec"><div class="rp-h">الترتيب</div>${standingsHtml}</div>
 
     <div class="rp-foot"><span>مجموعة <b>دراية</b></span><span>دوري دراية · الجولة ${week.week_number}</span></div>
   </div>`;

@@ -80,6 +80,27 @@ function stakeStatusText(m){
   return ` (${mark(m.team_a_id, m.team_a.name)} · ${mark(m.team_b_id, m.team_b.name)})`;
 }
 
+// نقل المباراة لجولة ثانية — متاح لأي مباراة (حتى المنتهية) لأنه تصنيف فقط
+function weekMoveHtml(m){
+  return `
+    <div style="display:flex;gap:8px;align-items:center;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);">
+      <span style="font-size:12px;color:var(--text2);white-space:nowrap;">الجولة</span>
+      <select class="field" id="wk-${m.id}" style="flex:1;padding:8px 10px;font-size:13px;">
+        ${weeksCache.map(w => `<option value="${w.id}" ${w.id === m.week_id ? 'selected' : ''}>الجولة ${w.week_number}</option>`).join("")}
+      </select>
+      <button class="btn" style="font-size:12px;padding:8px 12px;" onclick="onMoveWeek('${m.id}')">نقل</button>
+    </div>`;
+}
+
+async function onMoveWeek(matchId){
+  const weekId = document.getElementById(`wk-${matchId}`).value;
+  try{
+    await setMatchWeek(matchId, weekId);
+    showToast("تم نقل المباراة", "success");
+    await reload();
+  }catch(err){ showToast(err.message, "error"); }
+}
+
 function matchCard(m){
   if(m.status === "completed"){
     return `
@@ -88,6 +109,7 @@ function matchCard(m){
         <div class="match-summary"><span>${m.team_b.name} (دخل بـ${m.team_b_stake})</span><span style="color:var(--text2);">${m.team_b_balance_before}→${m.team_b_balance_after}</span></div>
         <div style="font-size:12px;color:var(--gold);font-weight:800;margin-bottom:8px;">الفائز: ${m.winner.name}</div>
         <button class="btn" id="undo-${m.id}" style="font-size:12px;">تصحيح / إلغاء الاعتماد</button>
+        ${weekMoveHtml(m)}
       </div>
     `;
   }
@@ -114,6 +136,7 @@ function matchCard(m){
         </div>
         <button class="btn primary block" type="submit" style="font-size:13px;">حفظ التعديل</button>
       </form>
+      ${weekMoveHtml(m)}
       <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);">
         ${m.prediction_enabled ? `
           <div style="display:flex;align-items:center;justify-content:space-between;font-size:12px;">

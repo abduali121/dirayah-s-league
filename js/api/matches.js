@@ -133,3 +133,10 @@ async function listStakeStatus(matchId){
   if(error) throw error;
   return data.map(r => r.team_id);
 }
+
+// نقل المباراة لجولة ثانية (تصنيف فقط — ما يغيّر أي رصيد أو نتيجة)
+async function setMatchWeek(matchId, weekId){
+  const { data, error } = await sb.rpc("admin_set_match_week", { p_match_id: matchId, p_week_id: weekId });
+  if(error) throw error;
+  return data;
+}

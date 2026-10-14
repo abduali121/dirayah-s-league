@@ -7,6 +7,7 @@ function renderAdminNav(activePage){
     { href: "players.html", label: "اللاعبون", key: "players" },
     { href: "matches.html", label: "المباريات", key: "matches" },
     { href: "loan-requests.html", label: "صفقات الإعارة", key: "loans" },
+    { href: "round-report.html", label: "تقرير الجولة", key: "report" },
     { href: "announcements.html", label: "تصريحات الدوري", key: "announcements" },
     { href: "photos.html", label: "صور الدوري", key: "photos" },
     { href: "balances.html", label: "الأرصدة", key: "balances" },

@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>تقرير الجولة - دوري دراية</title>
+<link rel="stylesheet" href="../assets/css/theme.css"/>
+<link rel="stylesheet" href="../assets/css/components.css"/>
+<style>
+  #adminTabs{ display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px; }
+  .picker{ display:flex;gap:8px;align-items:center;margin-bottom:14px; }
+  .picker select{ flex:1; }
+  #previewWrap{ margin-top:6px; }
+  #previewImg{ width:100%;display:block;border-radius:var(--radius);border:1px solid var(--border); }
+  .status{ text-align:center;color:var(--text2);font-size:13px;padding:30px 0; }
+
+  /* ===== البطاقة اللي تتحول لصورة — مقاس ثابت 1080 عشان تطلع نفس الجودة دايمًا ===== */
+  #stage{ position:fixed;left:-20000px;top:0;width:1080px; }
+  .rp{
+    --navy:#0b1a2e; --navy2:#12263f; --panel:#162d4a; --line:#25405f;
+    --gold:#d4b055; --gold-soft:#f1e3b5; --ink:#f3f6fb; --mute:#93a7c2;
+    --up:#5fd58b; --down:#ff8a80;
+    width:1080px;padding:64px 56px 48px;direction:rtl;color:var(--ink);
+    background:linear-gradient(180deg,#0e2038 0%,var(--navy) 55%,#08131f 100%);
+    font-family:'Tajawal',sans-serif;position:relative;
+  }
+  .rp *{ box-sizing:border-box;margin:0;padding:0; }
+  .rp-top{ display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:34px; }
+  .rp-logo{ background:#fff;border-radius:18px;padding:10px 16px;display:flex;align-items:center; }
+  .rp-logo img{ height:58px;display:block; }
+  .rp-title-eyebrow{ color:var(--gold);font-weight:700;font-size:26px; }
+  .rp-title{ font-family:'Thmanyah','Tajawal',serif;font-weight:900;font-size:104px;line-height:1.08;color:var(--ink); }
+  .rp-title b{ color:var(--gold);font-weight:900; }
+  .rp-date{ color:var(--mute);font-size:25px;margin-top:8px; }
+  .rp-rule{ height:3px;background:linear-gradient(90deg,transparent,var(--gold) 15%,var(--gold) 85%,transparent);margin:30px 0 34px;opacity:.9; }
+
+  .rp-kpis{ display:flex;gap:14px;margin-bottom:46px; }
+  .rp-kpi{ flex:1;background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:22px 10px;text-align:center; }
+  .rp-kpi .v{ font-family:'Thmanyah','Tajawal',serif;font-weight:900;font-size:50px;color:var(--gold);line-height:1.1; }
+  .rp-kpi .l{ font-size:21px;color:var(--mute);margin-top:6px; }
+
+  .rp-h{ font-family:'Thmanyah','Tajawal',serif;font-weight:900;font-size:40px;margin-bottom:20px;display:flex;align-items:center;gap:14px; }
+  .rp-h::after{ content:"";flex:1;height:2px;background:var(--line); }
+  .rp-sec{ margin-bottom:46px; }
+
+  /* نتائج المباريات */
+  .m-card{ background:var(--panel);border:1px solid var(--line);border-radius:26px;padding:26px 28px;margin-bottom:16px; }
+  .m-row{ display:flex;align-items:center;justify-content:space-between;gap:10px; }
+  .m-team{ width:36%;text-align:center; }
+  .m-team .crest{ width:92px;height:92px;border-radius:24px;margin:0 auto 12px;display:flex;align-items:center;justify-content:center;
+    font-family:'Thmanyah','Tajawal',serif;font-weight:900;font-size:42px;color:#fff;overflow:hidden; }
+  .m-team .crest img{ width:100%;height:100%;object-fit:cover;display:block; }
+  .m-team .nm{ font-weight:800;font-size:34px;line-height:1.3; }
+  .m-team .bal{ font-size:23px;color:var(--mute);margin-top:6px; }
+  .m-team .bal b{ color:var(--ink);font-weight:800; }
+  .m-team.win .crest{ box-shadow:0 0 0 5px var(--gold); }
+  .m-team.lose{ opacity:.78; }
+  .m-mid{ text-align:center;flex:1; }
+  .m-mid .vs{ font-family:'Thmanyah','Tajawal',serif;font-weight:900;font-size:34px;color:var(--mute); }
+  .m-win-tag{ display:inline-block;background:var(--gold);color:#241b00;font-weight:800;font-size:21px;border-radius:999px;padding:5px 18px;margin-top:10px; }
+  .m-stakes{ display:flex;justify-content:space-between;margin-top:20px;padding-top:18px;border-top:1px dashed var(--line);font-size:23px;color:var(--mute); }
+  .m-stakes b{ color:var(--gold-soft);font-weight:800; }
+
+  /* الترتيب */
+  .t-row{ display:flex;align-items:center;gap:16px;padding:15px 22px;background:var(--panel);border:1px solid var(--line);border-radius:20px;margin-bottom:10px; }
+  .t-row.hi{ border-color:var(--gold); }
+  .t-rank{ width:46px;height:46px;border-radius:50%;background:var(--navy2);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:25px;flex-shrink:0; }
+  .t-row.first .t-rank{ background:var(--gold);color:#241b00; }
+  .t-crest{ width:54px;height:54px;border-radius:15px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:25px;color:#fff;flex-shrink:0;overflow:hidden; }
+  .t-crest img{ width:100%;height:100%;object-fit:cover;display:block; }
+  .t-name{ flex:1;font-weight:800;font-size:31px; }
+  .t-delta{ font-weight:800;font-size:25px;min-width:110px;text-align:center; }
+  .t-delta.up{ color:var(--up); } .t-delta.down{ color:var(--down); } .t-delta.flat{ color:var(--mute); }
+  .t-move{ font-weight:800;font-size:24px;min-width:62px;text-align:center; }
+  .t-move.up{ color:var(--up); } .t-move.down{ color:var(--down); } .t-move.flat{ color:var(--mute); }
+  .t-bal{ font-family:'Thmanyah','Tajawal',serif;font-weight:900;font-size:35px;color:var(--gold-soft);min-width:130px;text-align:left; }
+
+  /* أعلى الصفقات — شبكة من عمودين */
+  .l-grid{ display:grid;grid-template-columns:1fr 1fr;gap:12px; }
+  .l-row{ background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:10px; }
+  .l-player{ font-weight:800;font-size:25px;line-height:1.3; }
+  .l-route{ font-size:20px;color:var(--mute);margin-top:4px; }
+  .l-amt{ text-align:left;flex-shrink:0; }
+  .l-amt .n{ font-family:'Thmanyah','Tajawal',serif;font-weight:900;font-size:32px;color:var(--gold-soft);line-height:1.1; }
+  .l-amt .tg{ font-size:17px;font-weight:700;margin-top:2px; }
+  .l-amt .tg.paid{ color:var(--up); } .l-amt .tg.free{ color:var(--mute); }
+  .l-empty{ color:var(--mute);font-size:25px;text-align:center;padding:20px; }
+
+  /* التشكيلات داخل كرت المباراة */
+  .lu-label{ margin-top:22px;margin-bottom:10px;font-size:21px;font-weight:800;color:var(--gold); }
+  .lu-grid{ display:flex;gap:12px; }
+  .lu-col{ flex:1;background:var(--navy2);border-radius:18px;padding:8px 18px; }
+  .lu-col .p{ font-size:23px;font-weight:600;padding:7px 0;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:6px; }
+  .lu-col .p:first-child{ border-top:none; }
+  .lu-tag{ font-size:16px;font-weight:800;background:var(--gold);color:#241b00;border-radius:999px;padding:2px 11px;white-space:nowrap; }
+  .lu-none{ color:var(--mute);font-size:22px;padding:10px 0; }
+
+  .rp-foot{ margin-top:10px;padding-top:26px;border-top:2px solid var(--line);display:flex;justify-content:space-between;color:var(--mute);font-size:23px; }
+  .rp-foot b{ color:var(--gold);font-weight:800; }
+</style>
+</head>
+<body>
+<header id="appHeader"></header>
+<main class="container">
+  <div id="adminTabs"></div>
+
+  <div class="picker">
+    <select class="field" id="roundSelect" onchange="onRoundChange()"></select>
+    <button class="btn primary" id="dlBtn" onclick="onDownload()" disabled>تنزيل كصورة</button>
+  </div>
+
+  <div id="previewWrap"><div class="status" id="statusMsg">جارٍ تجهيز التقرير...</div></div>
+</main>
+
+<div id="stage"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="../js/supabaseClient.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/ui/toast.js"></script>
+<script src="../js/ui/theme.js"></script>
+<script src="../js/ui/adminNav.js"></script>
+<script src="../js/api/teams.js"></script>
+<script src="../js/api/players.js"></script>
+<script src="../js/api/matches.js"></script>
+<script>
+let weeks = [], teamsById = {}, playersById = {}, allMatches = [];
+let currentWeek = null, lastBlob = null, renderToken = 0;
+
+const nf = (n) => Number(n).toLocaleString("en-US");
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c]));
+const fmtDate = (d) => new Date(d).toLocaleDateString("ar", { day: "numeric", month: "long", year: "numeric", calendar: "gregory" });
+
+function crest(team, cls){
+  // أسماء الفرق تبدأ بـ "ال" فكلها تطلع "ا" — نأخذ أول حرف بعدها
+  const initial = esc((team?.name || "؟").replace(/^ال/, "").slice(0, 1));
+  const bg = team?.primary_color || "#334155";
+  if(team?.logo_url){
+    return `<div class="${cls}" style="background:${bg}"><img src="${esc(team.logo_url)}" crossorigin="anonymous" alt=""
+      onerror="this.remove();this.parentNode&&(this.parentNode.textContent='${initial}')"/></div>`;
+  }
+  return `<div class="${cls}" style="background:${bg}">${initial}</div>`;
+}
+
+async function fetchRoundData(week){
+  const matches = allMatches.filter(m => m.week_id === week.id);
+  const ids = matches.map(m => m.id);
+  const done = matches.filter(m => m.status === "completed");
+  const lastAt = done.map(m => m.confirmed_at).filter(Boolean).sort().pop() || null;
+
+  const [loansRes, lineupsRes, roundLedger, laterLedger] = await Promise.all([
+    ids.length ? sb.from("match_loans").select("*").in("match_id", ids) : { data: [] },
+    ids.length ? sb.from("match_lineups").select("match_id, team_id, player_id").in("match_id", ids) : { data: [] },
+    ids.length ? sb.from("balance_ledger").select("team_id, delta, reason, match_id, loan_id").in("match_id", ids) : { data: [] },
+    lastAt ? sb.from("balance_ledger").select("team_id, delta").gt("created_at", lastAt) : { data: [] },
+  ]);
+  for(const r of [loansRes, lineupsRes, roundLedger, laterLedger]) if(r.error) throw r.error;
+  return { matches, done, loans: loansRes.data, lineups: lineupsRes.data, roundLedger: roundLedger.data, laterLedger: laterLedger.data };
+}
+
+// الرصيد بعد الجولة = الرصيد الحالي ناقص أي حركة صارت بعدها؛ وقبلها = بعدها ناقص حركات هذي الجولة
+function computeStandings(data){
+  const sum = (rows) => rows.reduce((acc, r) => (acc[r.team_id] = (acc[r.team_id] || 0) + r.delta, acc), {});
+  const later = sum(data.laterLedger), inRound = sum(data.roundLedger);
+  const rows = Object.values(teamsById).map(t => {
+    const after = t.balance_daraya - (later[t.id] || 0);
+    return { team: t, after, before: after - (inRound[t.id] || 0), delta: inRound[t.id] || 0 };
+  });
+  const rank = (key) => {
+    const sorted = [...rows].sort((a, b) => b[key] - a[key] || a.team.name.localeCompare(b.team.name, "ar"));
+    sorted.forEach((r, i) => r[key === "after" ? "rankAfter" : "rankBefore"] = i + 1);
+  };
+  rank("after"); rank("before");
+  return rows.sort((a, b) => a.rankAfter - b.rankAfter);
+}
+
+function reportHtml(week, data){
+  const { matches, done, loans, lineups, roundLedger } = data;
+  const standings = computeStandings(data);
+  const playing = new Set(done.flatMap(m => [m.team_a_id, m.team_b_id]));
+  const dates = done.map(m => m.confirmed_at).filter(Boolean).sort();
+  const dateText = dates.length ? fmtDate(dates[dates.length - 1]) : "";
+
+  const totalStake = done.reduce((s, m) => s + (m.team_a_stake || 0) + (m.team_b_stake || 0), 0);
+  const topDeal = loans.reduce((best, l) => (!best || l.winning_bid_amount > best.winning_bid_amount) ? l : best, null);
+  const kpis = [
+    { v: done.length + (matches.length > done.length ? `/${matches.length}` : ""), l: "مباريات" },
+    { v: nf(totalStake), l: "دراية دخلت التحدّي" },
+    { v: loans.length, l: "تعاقدات" },
+    { v: topDeal ? nf(topDeal.winning_bid_amount) : "—", l: "أعلى صفقة" },
+  ];
+
+  const loanByKey = {};
+  loans.forEach(l => { loanByKey[`${l.match_id}|${l.player_id}|${l.borrowing_team_id}`] = l; });
+  const lineupCol = (m, teamId) => {
+    const rows = lineups.filter(x => x.match_id === m.id && x.team_id === teamId);
+    return `<div class="lu-col">${rows.length
+      ? rows.map(x => {
+          const loan = loanByKey[`${m.id}|${x.player_id}|${teamId}`];
+          return `<div class="p"><span>${esc(playersById[x.player_id]?.full_name)}</span>${loan ? `<span class="lu-tag">معار · ${nf(loan.winning_bid_amount)}</span>` : ''}</div>`;
+        }).join("")
+      : `<div class="lu-none">ما دخلت التشكيلة</div>`}</div>`;
+  };
+
+  const matchesHtml = matches.map(m => {
+    const a = teamsById[m.team_a_id], b = teamsById[m.team_b_id];
+    const isDone = m.status === "completed";
+    const side = (t, id, before, after) => `
+      <div class="m-team ${isDone ? (m.winner_team_id === id ? 'win' : 'lose') : ''}">
+        ${crest(t, "crest")}
+        <div class="nm">${esc(t?.name)}</div>
+        ${isDone ? `<div class="bal">${nf(before)} ← <b>${nf(after)}</b></div>` : ""}
+      </div>`;
+    return `
+      <div class="m-card">
+        <div class="m-row">
+          ${side(a, m.team_a_id, m.team_a_balance_before, m.team_a_balance_after)}
+          <div class="m-mid">
+            <div class="vs">VS</div>
+            ${isDone ? `<div class="m-win-tag">فاز ${esc(teamsById[m.winner_team_id]?.name)}</div>` : `<div class="m-win-tag" style="background:var(--navy2);color:var(--mute);">لم تُلعب بعد</div>`}
+          </div>
+          ${side(b, m.team_b_id, m.team_b_balance_before, m.team_b_balance_after)}
+        </div>
+        ${m.team_a_stake != null && m.team_b_stake != null ? `
+          <div class="m-stakes">
+            <span>${esc(a?.name)} دخل بـ <b>${nf(m.team_a_stake)}</b></span>
+            <span>${esc(b?.name)} دخل بـ <b>${nf(m.team_b_stake)}</b></span>
+          </div>` : ""}
+        ${lineups.some(x => x.match_id === m.id) ? `<div class="lu-label">التشكيلتان</div>
+        <div class="lu-grid">${lineupCol(m, m.team_a_id)}${lineupCol(m, m.team_b_id)}</div>` : ""}
+      </div>`;
+  }).join("");
+
+  const standingsHtml = standings.map(r => {
+    const move = r.rankBefore - r.rankAfter;
+    const hi = playing.has(r.team.id);
+    return `
+      <div class="t-row ${hi ? 'hi' : ''} ${r.rankAfter === 1 ? 'first' : ''}">
+        <div class="t-rank">${r.rankAfter}</div>
+        ${crest(r.team, "t-crest")}
+        <div class="t-name">${esc(r.team.name)}</div>
+        <div class="t-move ${move > 0 ? 'up' : move < 0 ? 'down' : 'flat'}">${move > 0 ? '▲ ' + move : move < 0 ? '▼ ' + Math.abs(move) : '—'}</div>
+        <div class="t-delta ${r.delta > 0 ? 'up' : r.delta < 0 ? 'down' : 'flat'}">${r.delta > 0 ? '+' : r.delta < 0 ? '−' : ''}${nf(Math.abs(r.delta))}</div>
+        <div class="t-bal">${nf(r.after)}</div>
+      </div>`;
+  }).join("");
+
+  const paidLoanIds = new Set(roundLedger.filter(r => r.reason === "loan_fee" && r.loan_id && r.delta < 0).map(r => r.loan_id));
+  const topLoans = [...loans].sort((x, y) => y.winning_bid_amount - x.winning_bid_amount).slice(0, 6);
+  const loansHtml = topLoans.length ? `<div class="l-grid">${topLoans.map(l => `
+      <div class="l-row">
+        <div>
+          <div class="l-player">${esc(playersById[l.player_id]?.full_name)}</div>
+          <div class="l-route">${esc(teamsById[l.original_team_id]?.name)} ← ${esc(teamsById[l.borrowing_team_id]?.name)}</div>
+        </div>
+        <div class="l-amt"><div class="n">${nf(l.winning_bid_amount)}</div>
+          ${paidLoanIds.has(l.id) ? `<div class="tg paid">دُفعت</div>` : `<div class="tg free">بدون رسوم</div>`}
+        </div>
+      </div>`).join("")}</div>` : `<div class="l-empty">ما فيه تعاقدات بهذي الجولة</div>`;
+
+  return `
+  <div class="rp" id="reportCard">
+    <div class="rp-top">
+      <div>
+        <div class="rp-title-eyebrow">دوري دراية</div>
+        <div class="rp-title">تقرير <b>الجولة ${week.week_number}</b></div>
+        ${dateText ? `<div class="rp-date">${dateText}</div>` : ""}
+      </div>
+      <div class="rp-logo"><img src="../assets/daraya-logo-light.png" alt="مجموعة دراية"/></div>
+    </div>
+    <div class="rp-rule"></div>
+
+    <div class="rp-kpis">${kpis.map(k => `<div class="rp-kpi"><div class="v">${k.v}</div><div class="l">${k.l}</div></div>`).join("")}</div>
+
+    <div class="rp-sec"><div class="rp-h">نتائج المباريات</div>${matchesHtml || '<div class="l-empty">ما فيه مباريات بهذي الجولة</div>'}</div>
+    <div class="rp-sec"><div class="rp-h">الترتيب بعد الجولة</div>${standingsHtml}</div>
+    <div class="rp-sec"><div class="rp-h">أعلى الصفقات</div>${loansHtml}</div>
+
+    <div class="rp-foot"><span>مجموعة <b>دراية</b></span><span>دوري دراية · الجولة ${week.week_number}</span></div>
+  </div>`;
+}
+
+async function waitForAssets(root){
+  const imgs = [...root.querySelectorAll("img")];
+  await Promise.all(imgs.map(img => img.complete ? null : new Promise(res => { img.onload = img.onerror = res; })));
+  if(document.fonts && document.fonts.ready) await document.fonts.ready;
+}
+
+async function buildReport(){
+  const token = ++renderToken;
+  const status = document.getElementById("statusMsg");
+  const wrap = document.getElementById("previewWrap");
+  const btn = document.getElementById("dlBtn");
+  btn.disabled = true; lastBlob = null;
+  wrap.innerHTML = `<div class="status">جارٍ تجهيز التقرير...</div>`;
+  try{
+    const data = await fetchRoundData(currentWeek);
+    if(token !== renderToken) return;
+    const stage = document.getElementById("stage");
+    stage.innerHTML = reportHtml(currentWeek, data);
+    const card = document.getElementById("reportCard");
+    await waitForAssets(card);
+    const canvas = await html2canvas(card, { scale: 2, useCORS: true, backgroundColor: "#0b1a2e", logging: false, windowWidth: 1080 });
+    if(token !== renderToken) return;
+    lastBlob = await new Promise(res => canvas.toBlob(res, "image/png"));
+    wrap.innerHTML = `<img id="previewImg" alt="تقرير الجولة ${currentWeek.week_number}" src="${canvas.toDataURL("image/png")}"/>`;
+    btn.disabled = false;
+  }catch(err){
+    wrap.innerHTML = `<div class="status" style="color:var(--red);">تعذّر تجهيز التقرير: ${esc(err.message)}</div>`;
+  }
+}
+
+function onRoundChange(){
+  currentWeek = weeks.find(w => w.id === document.getElementById("roundSelect").value);
+  buildReport();
+}
+
+function onDownload(){
+  if(!lastBlob) return;
+  const url = URL.createObjectURL(lastBlob);
+  const a = document.createElement("a");
+  a.href = url; a.download = `تقرير-الجولة-${currentWeek.week_number}.png`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  showToast("تم تنزيل الصورة", "success");
+}
+
+(async function(){
+  const profile = await requireAuth({ adminOnly: true });
+  if(!profile) return;
+  renderAdminNav("report");
+
+  try{
+    const [w, teams, players, matches] = await Promise.all([listWeeks(), listTeams(), listPlayers(), listMatches()]);
+    weeks = w; allMatches = matches;
+    teamsById = Object.fromEntries(teams.map(t => [t.id, t]));
+    playersById = Object.fromEntries(players.map(p => [p.id, p]));
+
+    const withResults = new Set(matches.filter(m => m.status === "completed").map(m => m.week_id));
+    const roundsWithMatches = weeks.filter(wk => matches.some(m => m.week_id === wk.id));
+    const sel = document.getElementById("roundSelect");
+    sel.innerHTML = roundsWithMatches.map(wk => `<option value="${wk.id}">الجولة ${wk.week_number}${withResults.has(wk.id) ? '' : ' (لم تُلعب بعد)'}</option>`).join("");
+    const latestDone = [...roundsWithMatches].reverse().find(wk => withResults.has(wk.id)) || roundsWithMatches[roundsWithMatches.length - 1];
+    if(!latestDone){ document.getElementById("previewWrap").innerHTML = `<div class="status">ما فيه جولات بها مباريات بعد</div>`; return; }
+    sel.value = latestDone.id;
+    onRoundChange();
+  }catch(err){
+    document.getElementById("previewWrap").innerHTML = `<div class="status" style="color:var(--red);">${esc(err.message)}</div>`;
+  }
+})();
+</script>
+</body>
+</html>

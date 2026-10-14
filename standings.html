@@ -30,7 +30,7 @@
   .reveal{ opacity:0;animation:revealUp .55s cubic-bezier(.16,1,.3,1) forwards; }
   @media (prefers-reduced-motion:reduce){ .reveal{ animation:none;opacity:1; } }
 
-  /* مباريات الأسبوع — بطاقة واحدة تتغيّر تلقائيًا مثل التصريحات بالضبط */
+  /* مباريات الجولة — بطاقة واحدة تتغيّر تلقائيًا مثل التصريحات بالضبط */
   .matches-wrap{ margin-bottom:26px; }
   .matches-stack{ position:relative;display:grid;overflow:hidden;border-radius:var(--radius-lg); }
   .match-card{
@@ -185,7 +185,7 @@
   <div id="matchesSection" class="reveal" style="animation-delay:0s;">
     <div class="sec-title" id="matchesTitle">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/></svg>
-      مباريات الأسبوع
+      مباريات الجولة
     </div>
     <div class="matches-wrap">
       <div class="matches-stack" id="matchesStack"></div>
@@ -275,7 +275,7 @@ function crest(team){
     onerror="this.style.display='none';this.nextElementSibling.style.display='inline';"/><span style="display:none;">${initial}</span>`;
 }
 
-// محرّك دوران مشترك بين "مباريات الأسبوع" و"تصريحات الدوري": يملأ النقاط تدريجيًا
+// محرّك دوران مشترك بين "مباريات الجولة" و"تصريحات الدوري": يملأ النقاط تدريجيًا
 // ويبدّل العنصر الفعّال كل intervalMs — يُستخدم لأن عدد/طول المحتوى الحقيقي متغيّر
 const SLIDE_MS = 400;
 
@@ -346,7 +346,7 @@ function matchCard(m, i){
   const isDone = m.status === "completed";
   return `
     <a class="match-card ${i === 0 ? 'active' : ''}" data-i="${i}" onclick="location.href='match.html?id=${m.id}'">
-      <div class="mc-week">الأسبوع ${m.week?.week_number ?? '?'}${isDone ? ' · انتهت' : ''}</div>
+      <div class="mc-week">الجولة ${m.week?.week_number ?? '?'}${isDone ? ' · انتهت' : ''}</div>
       <div class="mc-teams">
         <div class="mc-team">
           <div class="mc-crest" style="background:${m.team_a?.primary_color || '#4b5563'}">${crest(m.team_a)}</div>
@@ -590,7 +590,7 @@ async function renderPredictionsHub(){
     return `
       <div class="predhub-card glass">
         <div class="predhub-head">
-          <span class="predhub-week">الأسبوع ${m.week?.week_number ?? '?'} · ${m.team_a.name} vs ${m.team_b.name}</span>
+          <span class="predhub-week">الجولة ${m.week?.week_number ?? '?'} · ${m.team_a.name} vs ${m.team_b.name}</span>
           <span class="predhub-reward">${m.prediction_reward}<span class="coin">د</span></span>
         </div>
         ${mine ? `

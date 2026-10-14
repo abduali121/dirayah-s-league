@@ -17,99 +17,72 @@
   /* ===== البطاقة اللي تتحول لصورة — مقاس ثابت 1080 عشان تطلع نفس الجودة دايمًا ===== */
   #stage{ position:fixed;left:-20000px;top:0;width:1080px; }
   .rp{
-    --navy:#0b1a2e; --navy2:#12263f; --panel:#162d4a; --line:#25405f;
-    --gold:#d4b055; --gold-soft:#f1e3b5; --ink:#f3f6fb; --mute:#93a7c2;
-    --up:#5fd58b; --down:#ff8a80;
-    width:1080px;padding:48px 52px 38px;direction:rtl;color:var(--ink);
-    background:linear-gradient(180deg,#0e2038 0%,var(--navy) 55%,#08131f 100%);
-    font-family:'Tajawal',sans-serif;position:relative;
+    --navy:#12304f; --navy2:#0c2038; --gold:#c99a2e; --gold-soft:#fbf1d3;
+    --ink:#14233a; --mute:#66778f; --card:#ffffff; --line:#e3e8ef; --bg:#f4f6f9;
+    --up:#14a05a; --down:#d9473d;
+    width:1080px;direction:rtl;color:var(--ink);background:var(--bg);
+    font-family:'Thmanyah','Tajawal',serif;position:relative;overflow:hidden;
   }
   .rp *{ box-sizing:border-box;margin:0;padding:0; }
-  .rp-top{ display:flex;justify-content:space-between;align-items:center;margin-bottom:22px; }
-  .rp-logo{ background:#fff;border-radius:18px;padding:10px 16px;display:flex;align-items:center; }
-  .rp-logo img{ height:50px;display:block; }
-  .rp-title-eyebrow{ color:var(--gold);font-weight:700;font-size:24px; }
-  .rp-title{ font-family:'Thmanyah','Tajawal',serif;font-weight:900;font-size:78px;line-height:1.1;color:var(--ink); }
-  .rp-title b{ color:var(--gold);font-weight:900; }
-  .rp-date{ color:var(--mute);font-size:23px;margin-top:4px; }
-  .rp-rule{ height:3px;background:linear-gradient(90deg,transparent,var(--gold) 15%,var(--gold) 85%,transparent);margin:20px 0 22px;opacity:.9; }
 
-  .rp-kpis{ display:flex;gap:12px;margin-bottom:34px; }
-  .rp-kpi{ flex:1;background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:14px 8px;text-align:center; }
-  .rp-kpi .v{ font-family:'Thmanyah','Tajawal',serif;font-weight:900;font-size:40px;color:var(--gold);line-height:1.1; }
-  .rp-kpi .l{ font-size:19px;color:var(--mute);margin-top:3px; }
+  /* الترويسة */
+  .rp-head{ background:linear-gradient(135deg,#1b4170 0%,var(--navy) 45%,var(--navy2) 100%);padding:54px 56px 50px;position:relative; }
+  .rp-head::after{ content:"";position:absolute;left:0;right:0;bottom:0;height:8px;background:linear-gradient(90deg,#8f6a14,var(--gold),#f0d27a,var(--gold),#8f6a14); }
+  .rp-head-row{ display:flex;justify-content:space-between;align-items:center; }
+  .rp-eyebrow{ color:#f0d27a;font-weight:800;font-size:28px;margin-bottom:10px; }
+  .rp-title{ font-family:'Thmanyah','Tajawal',serif;font-weight:900;font-size:96px;line-height:1.15;color:#fff; }
+  .rp-title b{ color:#f0d27a;font-weight:900; }
+  .rp-date{ color:#c4d3e6;font-size:26px;margin-top:16px; }
+  .rp-logo{ background:#fff;border-radius:22px;padding:14px 20px;display:flex;align-items:center; }
+  .rp-logo img{ height:64px;display:block; }
 
-  .rp-h{ font-family:'Thmanyah','Tajawal',serif;font-weight:900;font-size:34px;margin-bottom:14px;display:flex;align-items:center;gap:14px; }
-  .rp-h::after{ content:"";flex:1;height:2px;background:var(--line); }
-  .rp-sec{ margin-bottom:32px; }
+  .rp-body{ padding:44px 56px 40px; }
+  .rp-sec{ margin-bottom:46px; }
+  .rp-h{ font-family:'Thmanyah','Tajawal',serif;font-weight:900;font-size:44px;color:var(--navy);margin-bottom:22px;display:flex;align-items:center;gap:14px; }
+  .rp-h i{ display:inline-block;width:10px;height:42px;border-radius:5px;background:var(--gold); }
 
-  /* نتائج المباريات */
-  .m-card{ background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:18px 22px;margin-bottom:12px; }
-  .m-row{ display:flex;align-items:center;justify-content:space-between;gap:10px; }
-  .m-team{ width:38%;display:flex;align-items:center;gap:14px; }
-  .m-team .crest{ width:68px;height:68px;border-radius:18px;flex-shrink:0;display:flex;align-items:center;justify-content:center;
-    font-family:'Thmanyah','Tajawal',serif;font-weight:900;font-size:32px;color:#fff;overflow:hidden; }
-  .m-team .crest img{ width:100%;height:100%;object-fit:cover;display:block; }
-  .m-team .tx{ min-width:0; }
-  .m-team .nm{ font-weight:800;font-size:29px;line-height:1.25; }
-  .m-team .bal{ font-size:20px;color:var(--mute);margin-top:2px; }
-  .m-team .bal b{ color:var(--ink);font-weight:800; }
-  .m-team.win .crest{ box-shadow:0 0 0 4px var(--gold); }
-  .m-team.lose{ opacity:.78; }
-  .m-mid{ text-align:center;flex:1; }
-  .m-mid .vs{ font-family:'Thmanyah','Tajawal',serif;font-weight:900;font-size:26px;color:var(--mute); }
-  .m-win-tag{ display:inline-block;background:var(--gold);color:#241b00;font-weight:800;font-size:19px;border-radius:999px;padding:4px 16px;margin-top:6px; }
-  .m-stakes{ display:flex;justify-content:space-between;margin-top:14px;padding-top:12px;border-top:1px dashed var(--line);font-size:21px;color:var(--mute); }
-  .m-stakes b{ color:var(--gold-soft);font-weight:800; }
+  /* النتائج الحماسية */
+  .m-card{ background:var(--card);border-radius:28px;padding:30px 32px 28px;margin-bottom:20px;border:1px solid var(--line);box-shadow:0 10px 26px -14px rgba(18,48,79,.35); }
+  .m-shout{ font-family:'Thmanyah','Tajawal',serif;font-weight:900;font-size:40px;line-height:1.5;color:var(--navy);margin-bottom:22px; }
+  .m-shout .w{ color:var(--gold); }
+  .m-shout .l{ color:var(--down); }
+  .m-teams{ display:flex;gap:16px; }
+  .m-team{ flex:1;display:flex;align-items:center;gap:16px;border-radius:20px;padding:14px 16px;background:var(--bg);border:3px solid transparent; }
+  .m-team.win{ background:var(--gold-soft);border-color:var(--gold); }
+  .crest{ width:74px;height:74px;border-radius:20px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:'Thmanyah','Tajawal',serif;font-weight:900;font-size:36px;color:#fff;overflow:hidden; }
+  .crest img{ width:100%;height:100%;object-fit:cover;display:block; }
+  .m-team .nm{ font-weight:800;font-size:30px;line-height:1.3; }
+  .m-team .bal{ font-size:23px;color:var(--mute);margin-top:4px; }
+  .m-team .bal b{ font-family:'Thmanyah','Tajawal',serif;font-weight:900;font-size:34px;color:var(--ink); }
+  .m-wait{ font-weight:800;font-size:32px;color:var(--mute);text-align:center;padding:10px 0; }
+
+  /* أعلى الصفقات */
+  .d-row{ display:flex;align-items:center;gap:20px;background:var(--card);border:1px solid var(--line);border-radius:24px;padding:22px 26px;margin-bottom:14px;box-shadow:0 8px 20px -14px rgba(18,48,79,.35); }
+  .d-rank{ width:62px;height:62px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:'Thmanyah','Tajawal',serif;font-weight:900;font-size:32px;background:var(--navy);color:#fff; }
+  .d-row.r1 .d-rank{ background:var(--gold);color:#241b00; }
+  .d-info{ flex:1;min-width:0; }
+  .d-player{ font-weight:900;font-size:34px;line-height:1.3; }
+  .d-route{ font-size:24px;color:var(--mute);margin-top:6px; }
+  .d-route b{ color:var(--ink);font-weight:800; }
+  .d-amt{ font-family:'Thmanyah','Tajawal',serif;font-weight:900;font-size:50px;color:var(--navy);flex-shrink:0; }
+  .d-amt small{ font-family:'Thmanyah','Tajawal',serif;font-size:22px;font-weight:700;color:var(--mute);margin-inline-start:6px; }
 
   /* الترتيب */
-  .t-row{ display:flex;align-items:center;gap:14px;padding:8px 18px;background:var(--panel);border:1px solid var(--line);border-radius:16px;margin-bottom:7px; }
-  .t-row.hi{ border-color:var(--gold); }
-  .t-rank{ width:38px;height:38px;border-radius:50%;background:var(--navy2);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:21px;flex-shrink:0; }
+  .t-row{ display:flex;align-items:center;gap:18px;background:var(--card);border:1px solid var(--line);border-radius:22px;padding:16px 24px;margin-bottom:12px; }
+  .t-row.first{ background:var(--gold-soft);border-color:var(--gold);border-width:3px; }
+  .t-rank{ width:52px;height:52px;border-radius:50%;background:var(--bg);display:flex;align-items:center;justify-content:center;font-family:'Thmanyah','Tajawal',serif;font-weight:900;font-size:28px;flex-shrink:0; }
   .t-row.first .t-rank{ background:var(--gold);color:#241b00; }
-  .t-crest{ width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:21px;color:#fff;flex-shrink:0;overflow:hidden; }
+  .t-crest{ width:58px;height:58px;border-radius:16px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:28px;color:#fff;overflow:hidden; }
   .t-crest img{ width:100%;height:100%;object-fit:cover;display:block; }
-  .t-name{ flex:1;font-weight:800;font-size:27px; }
-  .t-delta{ font-weight:800;font-size:22px;min-width:100px;text-align:center; }
-  .t-delta.up{ color:var(--up); } .t-delta.down{ color:var(--down); } .t-delta.flat{ color:var(--mute); }
-  .t-move{ font-weight:800;font-size:21px;min-width:56px;text-align:center; }
-  .t-move.up{ color:var(--up); } .t-move.down{ color:var(--down); } .t-move.flat{ color:var(--mute); }
-  .t-bal{ font-family:'Thmanyah','Tajawal',serif;font-weight:900;font-size:30px;color:var(--gold-soft);min-width:110px;text-align:left; }
+  .t-name{ font-weight:900;font-size:33px;flex:1;min-width:0; }
+  .t-wins{ background:var(--navy);color:#fff;font-weight:800;font-size:24px;border-radius:999px;padding:5px 18px;margin-inline-start:12px;white-space:nowrap; }
+  .t-move{ font-weight:800;font-size:24px;min-width:70px;text-align:center; }
+  .t-move.up{ color:var(--up); } .t-move.down{ color:var(--down); } .t-move.flat{ color:#aab6c6; }
+  .t-bal{ font-family:'Thmanyah','Tajawal',serif;font-weight:900;font-size:40px;color:var(--navy);min-width:150px;text-align:left; }
+  .l-empty{ color:var(--mute);font-size:28px;text-align:center;padding:20px; }
 
-  /* أعلى الصفقات — شبكة من عمودين */
-  .l-grid{ display:grid;grid-template-columns:1fr 1fr;gap:10px; }
-  .l-row{ background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:12px 18px;display:flex;align-items:center;justify-content:space-between;gap:10px; }
-  .l-player{ font-weight:800;font-size:23px;line-height:1.3; }
-  .l-route{ font-size:18px;color:var(--mute);margin-top:2px; }
-  .l-amt{ text-align:left;flex-shrink:0; }
-  .l-amt .n{ font-family:'Thmanyah','Tajawal',serif;font-weight:900;font-size:28px;color:var(--gold-soft);line-height:1.1; }
-  .l-amt .tg{ font-size:17px;font-weight:700;margin-top:2px; }
-  .l-amt .tg.paid{ color:var(--up); } .l-amt .tg.free{ color:var(--mute); }
-  .l-empty{ color:var(--mute);font-size:25px;text-align:center;padding:20px; }
-
-  /* التشكيلات داخل كرت المباراة */
-  .lu-label{ margin-top:14px;margin-bottom:8px;font-size:19px;font-weight:800;color:var(--gold); }
-  .lu-grid{ display:flex;gap:12px; }
-  .lu-col{ flex:1;background:var(--navy2);border-radius:18px;padding:8px 18px; }
-  .lu-col .p{ font-size:21px;font-weight:600;padding:5px 0;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:6px; }
-  .lu-col .p:first-child{ border-top:none; }
-  .lu-tag{ font-size:16px;font-weight:800;background:var(--gold);color:#241b00;border-radius:999px;padding:2px 11px;white-space:nowrap; }
-  .lu-none{ color:var(--mute);font-size:22px;padding:10px 0; }
-
-  /* نتائج موجزة: سطر لكل مباراة */
-  .r-row{ display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:14px 20px;margin-bottom:10px; }
-  .r-side{ display:flex;align-items:center;gap:12px;flex:1;min-width:0; }
-  .r-side b{ font-size:28px;font-weight:800; }
-  .r-side.lose{ opacity:.8;justify-content:flex-end;flex-direction:row-reverse; }
-  .r-crest{ width:52px;height:52px;border-radius:14px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:24px;color:#fff;overflow:hidden; }
-  .r-crest img{ width:100%;height:100%;object-fit:cover;display:block; }
-  .r-side.win .r-crest{ box-shadow:0 0 0 3px var(--gold); }
-  .r-side .d{ font-weight:800;font-size:22px; }
-  .r-side .d.up{ color:var(--up); } .r-side .d.down{ color:var(--down); }
-  .r-x{ color:var(--mute);font-size:20px;font-weight:700;flex-shrink:0; }
-  .r-pending{ color:var(--mute);font-size:20px; }
-  .rp-foot{ margin-top:4px;padding-top:18px;border-top:2px solid var(--line);display:flex;justify-content:space-between;color:var(--mute);font-size:20px; }
-  .rp-foot b{ color:var(--gold);font-weight:800; }
+  .rp-foot{ background:var(--navy2);color:#c4d3e6;display:flex;justify-content:space-between;align-items:center;padding:26px 56px;font-size:24px; }
+  .rp-foot b{ color:#f0d27a;font-weight:800; }
 </style>
 </head>
 <body>
@@ -162,23 +135,29 @@ async function fetchRoundData(week){
   const done = matches.filter(m => m.status === "completed");
   const lastAt = done.map(m => m.confirmed_at).filter(Boolean).sort().pop() || null;
 
-  const [loansRes, lineupsRes, roundLedger, laterLedger] = await Promise.all([
+  const [loansRes, roundLedger, laterLedger] = await Promise.all([
     ids.length ? sb.from("match_loans").select("*").in("match_id", ids) : { data: [] },
-    ids.length ? sb.from("match_lineups").select("match_id, team_id, player_id").in("match_id", ids) : { data: [] },
-    ids.length ? sb.from("balance_ledger").select("team_id, delta, reason, match_id, loan_id").in("match_id", ids) : { data: [] },
+    ids.length ? sb.from("balance_ledger").select("team_id, delta").in("match_id", ids) : { data: [] },
     lastAt ? sb.from("balance_ledger").select("team_id, delta").gt("created_at", lastAt) : { data: [] },
   ]);
-  for(const r of [loansRes, lineupsRes, roundLedger, laterLedger]) if(r.error) throw r.error;
-  return { matches, done, loans: loansRes.data, lineups: lineupsRes.data, roundLedger: roundLedger.data, laterLedger: laterLedger.data };
+  for(const r of [loansRes, roundLedger, laterLedger]) if(r.error) throw r.error;
+  return { matches, done, lastAt, loans: loansRes.data, roundLedger: roundLedger.data, laterLedger: laterLedger.data };
 }
 
 // الرصيد بعد الجولة = الرصيد الحالي ناقص أي حركة صارت بعدها؛ وقبلها = بعدها ناقص حركات هذي الجولة
 function computeStandings(data){
   const sum = (rows) => rows.reduce((acc, r) => (acc[r.team_id] = (acc[r.team_id] || 0) + r.delta, acc), {});
   const later = sum(data.laterLedger), inRound = sum(data.roundLedger);
+  // عدد مرات الفوز لين نهاية هذي الجولة
+  const wins = {};
+  allMatches.forEach(m => {
+    if(m.status !== "completed" || !m.winner_team_id) return;
+    if(data.lastAt && m.confirmed_at && m.confirmed_at > data.lastAt) return;
+    wins[m.winner_team_id] = (wins[m.winner_team_id] || 0) + 1;
+  });
   const rows = Object.values(teamsById).map(t => {
     const after = t.balance_daraya - (later[t.id] || 0);
-    return { team: t, after, before: after - (inRound[t.id] || 0), delta: inRound[t.id] || 0 };
+    return { team: t, after, before: after - (inRound[t.id] || 0), wins: wins[t.id] || 0 };
   });
   const rank = (key) => {
     const sorted = [...rows].sort((a, b) => b[key] - a[key] || a.team.name.localeCompare(b.team.name, "ar"));
@@ -188,68 +167,90 @@ function computeStandings(data){
   return rows.sort((a, b) => a.rankAfter - b.rankAfter);
 }
 
+// عبارات حماسية — W الفائز، L الخاسر
+const SHOUTS = [
+  (W, L) => `تم سحق ${L} من قبل ${W}`,
+  (W, L) => `تم دعس ${L} من قبل ${W}`,
+  (W, L) => `${W} يكتسح ${L} اكتساحًا`,
+  (W, L) => `تم تحطيم ${L} على يد ${W}`,
+  (W, L) => `${W} يلقّن ${L} درسًا قاسيًا`,
+  (W, L) => `تم إسقاط ${L} من قبل ${W}`,
+];
+function shoutHtml(i, W, L){
+  // نركّب الجملة بأسماء مؤقتة ثم نلوّن الاسمين
+  const raw = SHOUTS[i % SHOUTS.length]("\u0001W\u0001", "\u0001L\u0001");
+  return esc(raw).replace("\u0001W\u0001", `<span class="w">${esc(W)}</span>`).replace("\u0001L\u0001", `<span class="l">${esc(L)}</span>`);
+}
+
 function reportHtml(week, data){
-  const { matches, done, loans, lineups, roundLedger } = data;
+  const { matches, done, loans } = data;
   const standings = computeStandings(data);
-  const playing = new Set(done.flatMap(m => [m.team_a_id, m.team_b_id]));
   const dates = done.map(m => m.confirmed_at).filter(Boolean).sort();
   const dateText = dates.length ? fmtDate(dates[dates.length - 1]) : "";
 
-  const totalStake = done.reduce((s, m) => s + (m.team_a_stake || 0) + (m.team_b_stake || 0), 0);
-  const topDeal = loans.reduce((best, l) => (!best || l.winning_bid_amount > best.winning_bid_amount) ? l : best, null);
-  const kpis = [
-    { v: done.length + (matches.length > done.length ? `/${matches.length}` : ""), l: "مباريات" },
-    { v: nf(totalStake), l: "دراية دخلت التحدّي" },
-    { v: loans.length, l: "تعاقدات" },
-    { v: topDeal ? nf(topDeal.winning_bid_amount) : "—", l: topDeal ? `أعلى صفقة · ${esc(playersById[topDeal.player_id]?.full_name)}` : "أعلى صفقة" },
-  ];
+  const teamBlock = (id, bal, win) => `
+    <div class="m-team ${win ? 'win' : ''}">
+      ${crest(teamsById[id], "crest")}
+      <div><div class="nm">${esc(teamsById[id]?.name)}</div>
+      <div class="bal">الرصيد <b>${nf(bal)}</b></div></div>
+    </div>`;
 
+  let shoutIdx = 0;
   const matchesHtml = matches.map(m => {
-    const isDone = m.status === "completed";
-    if(!isDone){
-      return `<div class="r-row"><div class="r-side"><b>${esc(teamsById[m.team_a_id]?.name)}</b></div><div class="r-x">×</div><div class="r-side"><b>${esc(teamsById[m.team_b_id]?.name)}</b></div><div class="r-pending">لم تُلعب بعد</div></div>`;
+    if(m.status !== "completed"){
+      return `<div class="m-card"><div class="m-wait">بانتظار ${esc(teamsById[m.team_a_id]?.name)} × ${esc(teamsById[m.team_b_id]?.name)}</div></div>`;
     }
     const aWon = m.winner_team_id === m.team_a_id;
-    const w = { id: m.team_a_id, stake: m.team_a_stake };
-    const l = { id: m.team_b_id, stake: m.team_b_stake };
-    const [win, lose] = aWon ? [w, l] : [l, w];
-    // المداقش اللي كسبه الفائز / خسره الخاسر (التغيّر الصافي بعد رسوم الإعارة يظهر بجدول الترتيب)
-    const side = (x, cls, sign) => `<div class="r-side ${cls}">${crest(teamsById[x.id], "r-crest")}<b>${esc(teamsById[x.id]?.name)}</b>
-        ${x.stake != null ? `<span class="d ${sign > 0 ? 'up' : 'down'}">${sign > 0 ? '+' : '−'}${nf(x.stake)}</span>` : ""}</div>`;
-    return `<div class="r-row">${side(win, "win", 1)}<div class="r-x">فاز على</div>${side(lose, "lose", -1)}</div>`;
+    const winId = aWon ? m.team_a_id : m.team_b_id, loseId = aWon ? m.team_b_id : m.team_a_id;
+    const winBal = aWon ? m.team_a_balance_after : m.team_b_balance_after;
+    const loseBal = aWon ? m.team_b_balance_after : m.team_a_balance_after;
+    return `
+      <div class="m-card">
+        <div class="m-shout">${shoutHtml(shoutIdx++, teamsById[winId]?.name, teamsById[loseId]?.name)}</div>
+        <div class="m-teams">${teamBlock(winId, winBal, true)}${teamBlock(loseId, loseBal, false)}</div>
+      </div>`;
   }).join("");
+
+  const top3 = [...loans].sort((x, y) => y.winning_bid_amount - x.winning_bid_amount).slice(0, 3);
+  const dealsHtml = top3.length ? top3.map((l, i) => `
+      <div class="d-row r${i + 1}">
+        <div class="d-rank">${i + 1}</div>
+        <div class="d-info">
+          <div class="d-player">${esc(playersById[l.player_id]?.full_name)}</div>
+          <div class="d-route">من <b>${esc(teamsById[l.original_team_id]?.name)}</b> إلى <b>${esc(teamsById[l.borrowing_team_id]?.name)}</b></div>
+        </div>
+        <div class="d-amt">${nf(l.winning_bid_amount)}<small>دراية</small></div>
+      </div>`).join("") : `<div class="l-empty">ما فيه تعاقدات بهذي الجولة</div>`;
 
   const standingsHtml = standings.map(r => {
     const move = r.rankBefore - r.rankAfter;
-    const hi = playing.has(r.team.id);
     return `
-      <div class="t-row ${hi ? 'hi' : ''} ${r.rankAfter === 1 ? 'first' : ''}">
+      <div class="t-row ${r.rankAfter === 1 ? 'first' : ''}">
         <div class="t-rank">${r.rankAfter}</div>
         ${crest(r.team, "t-crest")}
-        <div class="t-name">${esc(r.team.name)}</div>
+        <div class="t-name">${esc(r.team.name)}<span class="t-wins">ف ${r.wins}</span></div>
         <div class="t-move ${move > 0 ? 'up' : move < 0 ? 'down' : 'flat'}">${move > 0 ? '▲ ' + move : move < 0 ? '▼ ' + Math.abs(move) : '—'}</div>
-        <div class="t-delta ${r.delta > 0 ? 'up' : r.delta < 0 ? 'down' : 'flat'}">${r.delta > 0 ? '+' : r.delta < 0 ? '−' : ''}${nf(Math.abs(r.delta))}</div>
         <div class="t-bal">${nf(r.after)}</div>
       </div>`;
   }).join("");
 
   return `
   <div class="rp" id="reportCard">
-    <div class="rp-top">
-      <div>
-        <div class="rp-title-eyebrow">دوري دراية</div>
-        <div class="rp-title">تقرير <b>الجولة ${week.week_number}</b></div>
-        ${dateText ? `<div class="rp-date">${dateText}</div>` : ""}
+    <div class="rp-head">
+      <div class="rp-head-row">
+        <div>
+          <div class="rp-eyebrow">دوري دراية</div>
+          <div class="rp-title">تقرير <b>الجولة ${week.week_number}</b></div>
+          ${dateText ? `<div class="rp-date">${dateText}</div>` : ""}
+        </div>
+        <div class="rp-logo"><img src="../assets/daraya-logo-light.png" alt="مجموعة دراية"/></div>
       </div>
-      <div class="rp-logo"><img src="../assets/daraya-logo-light.png" alt="مجموعة دراية"/></div>
     </div>
-    <div class="rp-rule"></div>
-
-    <div class="rp-kpis">${kpis.map(k => `<div class="rp-kpi"><div class="v">${k.v}</div><div class="l">${k.l}</div></div>`).join("")}</div>
-
-    <div class="rp-sec"><div class="rp-h">النتائج</div>${matchesHtml || '<div class="l-empty">ما فيه مباريات بهذي الجولة</div>'}</div>
-    <div class="rp-sec"><div class="rp-h">الترتيب</div>${standingsHtml}</div>
-
+    <div class="rp-body">
+      <div class="rp-sec"><div class="rp-h"><i></i>نتائج الجولة</div>${matchesHtml || '<div class="l-empty">ما فيه مباريات بهذي الجولة</div>'}</div>
+      <div class="rp-sec"><div class="rp-h"><i></i>أعلى 3 صفقات</div>${dealsHtml}</div>
+      <div class="rp-sec" style="margin-bottom:0;"><div class="rp-h"><i></i>الترتيب</div>${standingsHtml}</div>
+    </div>
     <div class="rp-foot"><span>مجموعة <b>دراية</b></span><span>دوري دراية · الجولة ${week.week_number}</span></div>
   </div>`;
 }
@@ -274,7 +275,7 @@ async function buildReport(){
     stage.innerHTML = reportHtml(currentWeek, data);
     const card = document.getElementById("reportCard");
     await waitForAssets(card);
-    const canvas = await html2canvas(card, { scale: 2, useCORS: true, backgroundColor: "#0b1a2e", logging: false, windowWidth: 1080 });
+    const canvas = await html2canvas(card, { scale: 2, useCORS: true, backgroundColor: "#f4f6f9", logging: false, windowWidth: 1080 });
     if(token !== renderToken) return;
     lastBlob = await new Promise(res => canvas.toBlob(res, "image/png"));
     wrap.innerHTML = `<img id="previewImg" alt="تقرير الجولة ${currentWeek.week_number}" src="${canvas.toDataURL("image/png")}"/>`;

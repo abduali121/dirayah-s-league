@@ -79,8 +79,6 @@
   .t-form .dot{ width:26px;height:26px;border-radius:50%;display:block; }
   .t-form .dot.w{ background:var(--up); }
   .t-form .dot.l{ background:var(--down); }
-  .t-move{ font-weight:800;font-size:24px;min-width:70px;text-align:center; }
-  .t-move.up{ color:var(--up); } .t-move.down{ color:var(--down); } .t-move.flat{ color:#aab6c6; }
   .t-bal{ font-family:'Thmanyah','Tajawal',serif;font-weight:900;font-size:40px;color:var(--navy);min-width:150px;text-align:left; }
   .l-empty{ color:var(--mute);font-size:28px;text-align:center;padding:20px; }
 
@@ -229,14 +227,12 @@ function reportHtml(week, data){
       </div>`).join("") : `<div class="l-empty">ما فيه تعاقدات بهذي الجولة</div>`;
 
   const standingsHtml = standings.map(r => {
-    const move = r.rankBefore - r.rankAfter;
     return `
       <div class="t-row ${r.rankAfter === 1 ? 'first' : ''}">
         <div class="t-rank">${r.rankAfter}</div>
         ${crest(r.team, "t-crest")}
         <div class="t-name">${esc(r.team.name)}</div>
         <div class="t-form">${r.form.map(x => `<span class="dot ${x}"></span>`).join("")}</div>
-        <div class="t-move ${move > 0 ? 'up' : move < 0 ? 'down' : 'flat'}">${move > 0 ? '▲ ' + move : move < 0 ? '▼ ' + Math.abs(move) : '—'}</div>
         <div class="t-bal">${nf(r.after)}</div>
       </div>`;
   }).join("");
